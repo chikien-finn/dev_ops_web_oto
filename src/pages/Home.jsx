@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Search, MapPin, Calendar, Activity, ChevronRight, Star } from 'lucide-react';
+import { ChevronRight, Star } from 'lucide-react';
 import CarCard from '../components/CarCard';
 import '../styles/Home.css';
 import { featuredCars } from '../data/cars';

@@ -1,20 +1,18 @@
-import { createContext, useState, useEffect, useContext } from 'react';
+import { createContext, useState, useContext } from 'react';
 
 const AuthContext = createContext();
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null);
-
-  useEffect(() => {
+  const [user, setUser] = useState(() => {
     const storedUser = localStorage.getItem('user');
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-    }
-  }, []);
+    return storedUser ? JSON.parse(storedUser) : null;
+  });
 
   const login = (userData) => {
-    setUser(userData);
-    localStorage.setItem('user', JSON.stringify(userData));
+    // Đảm bảo user có mảng favorites khi đăng nhập
+    const userToSave = { ...userData, favorites: userData.favorites || [] };
+    setUser(userToSave);
+    localStorage.setItem('user', JSON.stringify(userToSave));
   };
 
   const logout = () => {
@@ -22,8 +20,24 @@ export function AuthProvider({ children }) {
     localStorage.removeItem('user');
   };
 
+  const toggleFavorite = (carId) => {
+    if (!user) return;
+    
+    let updatedFavorites;
+    const currentFavorites = user.favorites || [];
+    if (currentFavorites.includes(carId)) {
+      updatedFavorites = currentFavorites.filter(id => id !== carId);
+    } else {
+      updatedFavorites = [...currentFavorites, carId];
+    }
+
+    const updatedUser = { ...user, favorites: updatedFavorites };
+    setUser(updatedUser);
+    localStorage.setItem('user', JSON.stringify(updatedUser));
+  };
+
   return (
-    <AuthContext.Provider value={{ user, login, logout }}>
+    <AuthContext.Provider value={{ user, login, logout, toggleFavorite }}>
       {children}
     </AuthContext.Provider>
   );
