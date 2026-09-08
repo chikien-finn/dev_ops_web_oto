@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { Settings, Fuel, Calendar } from 'lucide-react';
-import './CarCard.css';
+import '../styles/CarCard.css';
 
 export default function CarCard({ name, price, image, year, type, fuel }) {
   return (

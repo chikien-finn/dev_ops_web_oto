@@ -1,38 +1,33 @@
 import { Link } from 'react-router-dom';
 import { Mail, Lock, ArrowRight } from 'lucide-react';
+import '../styles/Login.css';
 
 export default function Login() {
   return (
-    <div style={{ 
-      display: 'flex', 
-      alignItems: 'center', 
-      justifyContent: 'center', 
-      minHeight: '80vh',
-      padding: '40px 20px'
-    }}>
-      <div className="glass-card" style={{ width: '100%', maxWidth: '450px' }}>
-        <div style={{ textAlign: 'center', marginBottom: '32px' }}>
-          <h2 style={{ fontSize: '2rem', marginBottom: '8px' }}>Đăng Nhập</h2>
-          <p style={{ color: 'var(--text-secondary)' }}>Chào mừng bạn quay trở lại AutoPremium</p>
+    <div className="login-container">
+      <div className="glass-card login-card">
+        <div className="login-header">
+          <h2 className="login-title">Đăng Nhập</h2>
+          <p className="login-subtitle">Chào mừng bạn quay trở lại AutoPremium</p>
         </div>
 
         <form>
           <div className="form-group">
             <label>Email</label>
-            <div style={{ position: 'relative' }}>
-              <Mail size={18} style={{ position: 'absolute', top: '14px', left: '16px', color: 'var(--text-secondary)' }} />
-              <input type="email" className="form-control" placeholder="Nhập email của bạn" style={{ paddingLeft: '44px' }} />
+            <div className="login-input-wrapper">
+              <Mail size={18} className="login-input-icon" />
+              <input type="email" className="form-control login-input" placeholder="Nhập email của bạn" />
             </div>
           </div>
 
-          <div className="form-group" style={{ marginBottom: '32px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-              <label style={{ margin: 0 }}>Mật khẩu</label>
-              <a href="#" style={{ fontSize: '0.9rem', color: 'var(--accent-color)' }}>Quên mật khẩu?</a>
+          <div className="form-group login-password-group">
+            <div className="login-label-row">
+              <label className="login-label">Mật khẩu</label>
+              <a href="#" className="login-forgot-password">Quên mật khẩu?</a>
             </div>
-            <div style={{ position: 'relative' }}>
-              <Lock size={18} style={{ position: 'absolute', top: '14px', left: '16px', color: 'var(--text-secondary)' }} />
-              <input type="password" className="form-control" placeholder="Nhập mật khẩu" style={{ paddingLeft: '44px' }} />
+            <div className="login-input-wrapper">
+              <Lock size={18} className="login-input-icon" />
+              <input type="password" className="form-control login-input" placeholder="Nhập mật khẩu" />
             </div>
           </div>
 
@@ -41,8 +36,8 @@ export default function Login() {
           </button>
         </form>
 
-        <p style={{ textAlign: 'center', marginTop: '24px', color: 'var(--text-secondary)' }}>
-          Chưa có tài khoản? <Link to="/register" style={{ color: 'var(--accent-color)', fontWeight: '600' }}>Đăng ký ngay</Link>
+        <p className="login-footer-text">
+          Chưa có tài khoản? <Link to="/register" className="login-register-link">Đăng ký ngay</Link>
         </p>
       </div>
     </div>

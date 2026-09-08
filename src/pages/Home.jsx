@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
-import { ArrowRight, Star } from 'lucide-react';
+import { Search, MapPin, Calendar, Activity, ChevronRight, Star } from 'lucide-react';
 import CarCard from '../components/CarCard';
-import './Home.css';
+import '../styles/Home.css';
 
 export default function Home() {
   const featuredCars = [

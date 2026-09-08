@@ -1,4 +1,4 @@
-import './Footer.css';
+import '../styles/Footer.css';
 import { Car, Globe, Mail, MessageCircle } from 'lucide-react';
 
 export default function Footer() {
