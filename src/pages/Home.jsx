@@ -46,7 +46,7 @@ export default function Home() {
           </p>
           <div className="hero-actions">
             <Link to="/cars" className="btn btn-primary btn-lg">
-              Khám Phá Ngay <ArrowRight size={20} />
+              Khám Phá Ngay <ChevronRight size={20} />
             </Link>
             <Link to="/register" className="btn btn-outline btn-lg">
               Tạo Tài Khoản
