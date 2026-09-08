@@ -1,8 +1,23 @@
-import { Link } from 'react-router-dom';
-import { Mail, Lock, ArrowRight } from 'lucide-react';
+import { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { User, Lock, ArrowRight } from 'lucide-react';
 import '../styles/Login.css';
 
 export default function Login() {
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const navigate = useNavigate();
+
+  const handleLogin = (e) => {
+    e.preventDefault();
+    if (username === 'user123' && password === '123456') {
+      navigate('/');
+    } else {
+      setError('Tên đăng nhập hoặc mật khẩu không chính xác');
+    }
+  };
+
   return (
     <div className="login-container">
       <div className="glass-card login-card">
@@ -11,12 +26,25 @@ export default function Login() {
           <p className="login-subtitle">Chào mừng bạn quay trở lại AutoPremium</p>
         </div>
 
-        <form>
+        <form onSubmit={handleLogin}>
+          {error && (
+            <div style={{ color: '#ef4444', backgroundColor: '#fee2e2', padding: '10px', borderRadius: '8px', marginBottom: '16px', fontSize: '0.9rem', textAlign: 'center' }}>
+              {error}
+            </div>
+          )}
+
           <div className="form-group">
-            <label>Email</label>
+            <label>Tên đăng nhập</label>
             <div className="login-input-wrapper">
-              <Mail size={18} className="login-input-icon" />
-              <input type="email" className="form-control login-input" placeholder="Nhập email của bạn" />
+              <User size={18} className="login-input-icon" />
+              <input 
+                type="text" 
+                className="form-control login-input" 
+                placeholder="Nhập tên đăng nhập" 
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                required
+              />
             </div>
           </div>
 
@@ -27,11 +55,18 @@ export default function Login() {
             </div>
             <div className="login-input-wrapper">
               <Lock size={18} className="login-input-icon" />
-              <input type="password" className="form-control login-input" placeholder="Nhập mật khẩu" />
+              <input 
+                type="password" 
+                className="form-control login-input" 
+                placeholder="Nhập mật khẩu" 
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
             </div>
           </div>
 
-          <button type="button" className="btn btn-primary btn-full">
+          <button type="submit" className="btn btn-primary btn-full">
             Đăng Nhập <ArrowRight size={18} />
           </button>
         </form>
