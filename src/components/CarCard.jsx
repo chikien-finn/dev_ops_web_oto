@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { Settings, Fuel, Calendar } from 'lucide-react';
 import '../styles/CarCard.css';
 
-export default function CarCard({ name, price, image, year, type, fuel }) {
+export default function CarCard({ id, name, price, image, year, type, fuel }) {
   return (
     <div className="car-card glass-card">
       <div className="car-image-container">
@@ -22,7 +22,7 @@ export default function CarCard({ name, price, image, year, type, fuel }) {
             <Fuel size={16} /> <span>{fuel}</span>
           </div>
         </div>
-        <Link to={`/cars`} className="btn btn-primary btn-full">Xem Chi Tiết</Link>
+        <Link to={`/car/${id}`} className="btn btn-primary btn-full">Xem Chi Tiết</Link>
       </div>
     </div>
   );
