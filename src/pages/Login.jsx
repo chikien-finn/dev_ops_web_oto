@@ -2,16 +2,19 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { User, Lock, ArrowRight } from 'lucide-react';
 import '../styles/Login.css';
+import { useAuth } from '../context/AuthContext';
 
 export default function Login() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const navigate = useNavigate();
+  const { login } = useAuth();
 
   const handleLogin = (e) => {
     e.preventDefault();
     if (username === 'user123' && password === '123456') {
+      login({ username: 'user123', name: 'Nguyễn Văn A' });
       navigate('/');
     } else {
       setError('Tên đăng nhập hoặc mật khẩu không chính xác');
