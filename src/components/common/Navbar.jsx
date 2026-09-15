@@ -33,8 +33,8 @@ export default function Navbar() {
           </li>
           {user?.role === 'admin' && (
             <li>
-              <Link to="/admin" style={{ color: 'var(--accent-hover)', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <Shield size={16} /> Quản Trị
+              <Link to="/admin" className="nav-admin-link">
+                <Shield size={16} /> <span>Quản Trị</span>
               </Link>
             </li>
           )}
@@ -42,19 +42,13 @@ export default function Navbar() {
         <div className="navbar-actions">
           {user ? (
             <>
-              {user.role === 'admin' && (
-                <Link to="/admin" className="btn btn-outline" style={{ display: 'flex', alignItems: 'center', gap: '6px', borderColor: 'var(--accent-hover)' }}>
-                  <Shield size={18} />
-                  <span>Admin</span>
-                </Link>
-              )}
               <Link to="/profile" className="btn btn-outline" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <User size={18} />
                 <span style={{ fontWeight: '500' }}>{user.name || user.username}</span>
               </Link>
               <button onClick={handleLogout} className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <LogOut size={18} />
-                Đăng Xuất
+                <span>Đăng Xuất</span>
               </button>
             </>
           ) : (
