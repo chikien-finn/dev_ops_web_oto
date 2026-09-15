@@ -67,22 +67,22 @@ export default function Profile() {
                 </div>
                 <div className="info-item">
                   <label>Tên đăng nhập</label>
-                  <input type="text" defaultValue={user.username} readOnly />
+                  <input type="text" defaultValue={user.username || ''} readOnly />
                 </div>
                 <div className="info-item">
                   <label>Email</label>
-                  <input type="email" defaultValue={`${user.username}@gmail.com`} readOnly />
+                  <input type="email" defaultValue={user.email || `${user.username}@gmail.com`} readOnly />
                 </div>
                 <div className="info-item">
                   <label>Số điện thoại</label>
-                  <input type="text" defaultValue="0123 456 789" readOnly />
+                  <input type="text" defaultValue={user.phone || 'Chưa cập nhật'} readOnly />
                 </div>
                 <div className="info-item" style={{ gridColumn: '1 / -1' }}>
                   <label>Địa chỉ</label>
-                  <input type="text" defaultValue="Hà Nội, Việt Nam" readOnly />
+                  <input type="text" defaultValue={user.address || 'Hà Nội, Việt Nam'} readOnly />
                 </div>
               </div>
-              <button className="btn btn-primary" style={{ marginTop: '32px' }}>Cập nhật thông tin</button>
+              <button className="btn btn-primary" style={{ marginTop: '32px' }} onClick={() => alert('Chức năng cập nhật thông tin sẽ sớm ra mắt trong bản nâng cấp tiếp theo!')}>Cập nhật thông tin</button>
             </>
           )}
 

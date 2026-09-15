@@ -1,23 +1,32 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { User, Lock, ArrowRight } from 'lucide-react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { User, Lock, ArrowRight, AlertCircle, CheckCircle2 } from 'lucide-react';
 import '../styles/Login.css';
 import { useAuth } from '../context/AuthContext';
 
 export default function Login() {
-  const [username, setUsername] = useState('');
+  const location = useLocation();
+  const [username, setUsername] = useState(location.state?.registeredUsername || '');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [infoMsg, setInfoMsg] = useState(() => 
+    location.state?.registeredUsername
+      ? `Đăng ký thành công! Vui lòng nhập mật khẩu cho tài khoản "${location.state.registeredUsername}" để tiếp tục.`
+      : ''
+  );
   const navigate = useNavigate();
   const { login } = useAuth();
 
   const handleLogin = (e) => {
     e.preventDefault();
-    if (username === 'user123' && password === '123456') {
-      login({ username: 'user123', name: 'Nguyễn Văn A' });
+    setError('');
+    setInfoMsg('');
+
+    const result = login(username, password);
+    if (result.success) {
       navigate('/');
     } else {
-      setError('Tên đăng nhập hoặc mật khẩu không chính xác');
+      setError(result.message || 'Tên đăng nhập hoặc mật khẩu không chính xác.');
     }
   };
 
@@ -29,21 +38,29 @@ export default function Login() {
           <p className="login-subtitle">Chào mừng bạn quay trở lại AutoPremium</p>
         </div>
 
-        <form onSubmit={handleLogin}>
-          {error && (
-            <div style={{ color: '#ef4444', backgroundColor: '#fee2e2', padding: '10px', borderRadius: '8px', marginBottom: '16px', fontSize: '0.9rem', textAlign: 'center' }}>
-              {error}
-            </div>
-          )}
+        {infoMsg && (
+          <div className="auth-alert auth-alert-success">
+            <CheckCircle2 size={20} className="auth-alert-icon" />
+            <span>{infoMsg}</span>
+          </div>
+        )}
 
+        {error && (
+          <div className="auth-alert auth-alert-error">
+            <AlertCircle size={20} className="auth-alert-icon" />
+            <span>{error}</span>
+          </div>
+        )}
+
+        <form onSubmit={handleLogin}>
           <div className="form-group">
-            <label>Tên đăng nhập</label>
+            <label>Tên đăng nhập hoặc Email</label>
             <div className="login-input-wrapper">
               <User size={18} className="login-input-icon" />
               <input 
                 type="text" 
                 className="form-control login-input" 
-                placeholder="Nhập tên đăng nhập" 
+                placeholder="Nhập tên đăng nhập hoặc email" 
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 required
@@ -54,7 +71,7 @@ export default function Login() {
           <div className="form-group login-password-group">
             <div className="login-label-row">
               <label className="login-label">Mật khẩu</label>
-              <a href="#" className="login-forgot-password">Quên mật khẩu?</a>
+              <a href="#" className="login-forgot-password" onClick={(e) => { e.preventDefault(); alert('Vui lòng liên hệ quản trị viên hoặc sử dụng tài khoản mẫu: user123 / 123456'); }}>Quên mật khẩu?</a>
             </div>
             <div className="login-input-wrapper">
               <Lock size={18} className="login-input-icon" />
