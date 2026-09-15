@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { User, AtSign, Mail, Phone, Lock, ArrowRight, CheckCircle2, AlertCircle } from 'lucide-react';
-import '../styles/Login.css';
-import { useAuth } from '../context/AuthContext';
+import '../../styles/user/Register.css';
+import { useAuth } from '../../context/AuthContext';
 
 export default function Register() {
   const [fullname, setFullname] = useState('');
@@ -81,11 +81,11 @@ export default function Register() {
   };
 
   return (
-    <div className="login-container">
-      <div className="glass-card login-card" style={{ maxWidth: '520px' }}>
-        <div className="login-header">
-          <h2 className="login-title">Đăng Ký</h2>
-          <p className="login-subtitle">Gia nhập cộng đồng yêu xe đẳng cấp AutoPremium</p>
+    <div className="register-container">
+      <div className="glass-card register-card">
+        <div className="register-header">
+          <h2 className="register-title">Đăng Ký</h2>
+          <p className="register-subtitle">Gia nhập cộng đồng yêu xe đẳng cấp AutoPremium</p>
         </div>
 
         {error && (
@@ -105,11 +105,11 @@ export default function Register() {
         <form onSubmit={handleRegister}>
           <div className="form-group">
             <label>Họ và Tên <span style={{ color: '#ff6b6b' }}>*</span></label>
-            <div className="login-input-wrapper">
-              <User size={18} className="login-input-icon" />
+            <div className="register-input-wrapper">
+              <User size={18} className="register-input-icon" />
               <input 
                 type="text" 
-                className="form-control login-input" 
+                className="form-control register-input" 
                 placeholder="Ví dụ: Nguyễn Văn An" 
                 value={fullname}
                 onChange={(e) => setFullname(e.target.value)}
@@ -121,11 +121,11 @@ export default function Register() {
 
           <div className="form-group">
             <label>Tên đăng nhập <span style={{ color: '#ff6b6b' }}>*</span></label>
-            <div className="login-input-wrapper">
-              <AtSign size={18} className="login-input-icon" />
+            <div className="register-input-wrapper">
+              <AtSign size={18} className="register-input-icon" />
               <input 
                 type="text" 
-                className="form-control login-input" 
+                className="form-control register-input" 
                 placeholder="Ví dụ: vanan123 (không dấu, không khoảng trắng)" 
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
@@ -137,11 +137,11 @@ export default function Register() {
 
           <div className="form-group">
             <label>Email <span style={{ color: '#ff6b6b' }}>*</span></label>
-            <div className="login-input-wrapper">
-              <Mail size={18} className="login-input-icon" />
+            <div className="register-input-wrapper">
+              <Mail size={18} className="register-input-icon" />
               <input 
                 type="email" 
-                className="form-control login-input" 
+                className="form-control register-input" 
                 placeholder="name@example.com" 
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -153,11 +153,11 @@ export default function Register() {
 
           <div className="form-group">
             <label>Số điện thoại (tùy chọn)</label>
-            <div className="login-input-wrapper">
-              <Phone size={18} className="login-input-icon" />
+            <div className="register-input-wrapper">
+              <Phone size={18} className="register-input-icon" />
               <input 
                 type="tel" 
-                className="form-control login-input" 
+                className="form-control register-input" 
                 placeholder="Ví dụ: 0912 345 678" 
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
@@ -168,11 +168,11 @@ export default function Register() {
 
           <div className="form-group">
             <label>Mật khẩu <span style={{ color: '#ff6b6b' }}>*</span></label>
-            <div className="login-input-wrapper">
-              <Lock size={18} className="login-input-icon" />
+            <div className="register-input-wrapper">
+              <Lock size={18} className="register-input-icon" />
               <input 
                 type="password" 
-                className="form-control login-input" 
+                className="form-control register-input" 
                 placeholder="Tối thiểu 6 ký tự" 
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -182,13 +182,13 @@ export default function Register() {
             </div>
           </div>
 
-          <div className="form-group login-password-group">
+          <div className="form-group register-password-group">
             <label>Xác nhận Mật khẩu <span style={{ color: '#ff6b6b' }}>*</span></label>
-            <div className="login-input-wrapper">
-              <Lock size={18} className="login-input-icon" />
+            <div className="register-input-wrapper">
+              <Lock size={18} className="register-input-icon" />
               <input 
                 type="password" 
-                className="form-control login-input" 
+                className="form-control register-input" 
                 placeholder="Nhập lại chính xác mật khẩu trên" 
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
@@ -209,8 +209,8 @@ export default function Register() {
           </button>
         </form>
 
-        <p className="login-footer-text">
-          Đã có tài khoản? <Link to="/login" className="login-register-link">Đăng nhập ngay</Link>
+        <p className="register-footer-text">
+          Đã có tài khoản? <Link to="/login" className="register-login-link">Đăng nhập ngay</Link>
         </p>
       </div>
     </div>

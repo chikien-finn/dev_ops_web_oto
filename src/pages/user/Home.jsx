@@ -1,12 +1,13 @@
 import { Link } from 'react-router-dom';
 import { ChevronRight, Star } from 'lucide-react';
-import CarCard from '../components/CarCard';
-import '../styles/Home.css';
-import { featuredCars } from '../data/cars';
-import { useAuth } from '../context/AuthContext';
+import CarCard from '../../components/user/CarCard';
+import '../../styles/user/Home.css';
+import { useAuth } from '../../context/AuthContext';
+import { useCars } from '../../context/CarContext';
 
 export default function Home() {
   const { user } = useAuth();
+  const { featuredCars } = useCars();
 
   return (
     <div className="home-page">

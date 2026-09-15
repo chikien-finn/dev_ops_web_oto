@@ -2,8 +2,10 @@ version: '3.8'
 
 services:
   web:
-    build: .
-    container_name: web_ban_oto_frontend
+    build: .                              # Build từ Dockerfile ở thư mục hiện tại
+    container_name: web_ban_oto_frontend  # Đặt tên cho container
     ports:
-      - "8080:80"
-    restart: always
+      - "8080:80"                         # Cổng máy thật 8080 -> Cổng 80 Nginx trong container
+    restart: always                       # Tự khởi động lại nếu container bị tắt hoặc server reboot
+
+

@@ -1,12 +1,13 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import Navbar from './components/Navbar';
-import Footer from './components/Footer';
-import Home from './pages/Home';
-import Cars from './pages/Cars';
-import CarDetail from './pages/CarDetail';
-import Login from './pages/Login';
-import Register from './pages/Register';
-import Profile from './pages/Profile';
+import Navbar from './components/common/Navbar';
+import Footer from './components/common/Footer';
+import Home from './pages/user/Home';
+import Cars from './pages/user/Cars';
+import CarDetail from './pages/user/CarDetail';
+import Login from './pages/user/Login';
+import Register from './pages/user/Register';
+import Profile from './pages/user/Profile';
+import Admin from './pages/admin/Admin';
 
 function App() {
   return (
@@ -21,6 +22,7 @@ function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/profile" element={<Profile />} />
+            <Route path="/admin" element={<Admin />} />
           </Routes>
         </main>
         <Footer />

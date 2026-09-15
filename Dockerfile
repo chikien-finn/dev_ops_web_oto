@@ -1,28 +1,23 @@
-# Build stage
+# Stage 1: Dùng Node.js để build mã nguồn React
 FROM node:20-alpine AS builder
-
 WORKDIR /app
 
-# Copy package files
+# Cài đặt thư viện
 COPY package.json package-lock.json ./
-
-# Install dependencies
 RUN npm ci
 
-# Copy source code
+# Copy code và build ra thư mục dist
 COPY . .
-
-# Build the application
 RUN npm run build
 
-# Serve stage
+# Stage 2: Dùng Nginx siêu nhẹ để chạy web
 FROM nginx:alpine
 
-# Copy built assets from builder stage
+# Copy file đã build ở Stage 1 sang Nginx
 COPY --from=builder /app/dist /usr/share/nginx/html
 
-# Expose port 80
+# Mở cổng 80 và khởi chạy Nginx
 EXPOSE 80
-
-# Start Nginx
 CMD ["nginx", "-g", "daemon off;"]
+
+

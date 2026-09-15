@@ -1,7 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { Car, User, LogIn, LogOut } from 'lucide-react';
-import '../styles/Navbar.css';
-import { useAuth } from '../context/AuthContext';
+import { Car, User, LogIn, LogOut, Shield } from 'lucide-react';
+import '../../styles/user/Navbar.css';
+import { useAuth } from '../../context/AuthContext';
 
 export default function Navbar() {
   const { user, logout } = useAuth();
@@ -22,10 +22,23 @@ export default function Navbar() {
         <ul className="navbar-links">
           <li><Link to="/">Trang Chủ</Link></li>
           <li><Link to="/cars">Sản Phẩm</Link></li>
+          {user?.role === 'admin' && (
+            <li>
+              <Link to="/admin" style={{ color: 'var(--accent-hover)', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <Shield size={16} /> Quản Trị
+              </Link>
+            </li>
+          )}
         </ul>
         <div className="navbar-actions">
           {user ? (
             <>
+              {user.role === 'admin' && (
+                <Link to="/admin" className="btn btn-outline" style={{ display: 'flex', alignItems: 'center', gap: '6px', borderColor: 'var(--accent-hover)' }}>
+                  <Shield size={18} />
+                  <span>Admin</span>
+                </Link>
+              )}
               <Link to="/profile" className="btn btn-outline" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <User size={18} />
                 <span style={{ fontWeight: '500' }}>{user.name || user.username}</span>

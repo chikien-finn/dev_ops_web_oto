@@ -1,13 +1,14 @@
 import { User, Key, Heart } from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../../context/AuthContext';
+import { useCars } from '../../context/CarContext';
 import { useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
-import { allCars } from '../data/cars';
-import CarCard from '../components/CarCard';
-import '../styles/Profile.css';
+import CarCard from '../../components/user/CarCard';
+import '../../styles/user/Profile.css';
 
 export default function Profile() {
   const { user } = useAuth();
+  const { cars } = useCars();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('profile'); // 'profile' or 'favorites'
 
@@ -19,7 +20,7 @@ export default function Profile() {
 
   if (!user) return null;
 
-  const favoriteCars = user.favorites ? allCars.filter(car => user.favorites.includes(car.id)) : [];
+  const favoriteCars = user.favorites ? cars.filter(car => user.favorites.includes(car.id)) : [];
 
   return (
     <div className="profile-page container">
@@ -29,7 +30,7 @@ export default function Profile() {
             <User size={64} />
           </div>
           <h2>{user.name || user.username}</h2>
-          <p>Thành viên AutoPremium</p>
+          <p>{user.role === 'admin' ? 'Quản Trị Viên AutoPremium' : 'Thành viên AutoPremium'}</p>
           
           <ul className="profile-menu">
             <li>
@@ -42,14 +43,14 @@ export default function Profile() {
             </li>
             <li>
               <button 
-                className={activeTab === 'favorites' ? 'active' : ''}
+                className={activeTab === 'favorites' ? 'active' : ''} 
                 onClick={() => setActiveTab('favorites')}
               >
-                <Heart size={18} /> Xe yêu thích
+                <Heart size={18} /> Xe yêu thích ({favoriteCars.length})
               </button>
             </li>
             <li>
-              <button>
+              <button onClick={() => alert('Tính năng đổi mật khẩu sẽ sớm cập nhật!')}>
                 <Key size={18} /> Đổi mật khẩu
               </button>
             </li>
@@ -82,7 +83,9 @@ export default function Profile() {
                   <input type="text" defaultValue={user.address || 'Hà Nội, Việt Nam'} readOnly />
                 </div>
               </div>
-              <button className="btn btn-primary" style={{ marginTop: '32px' }} onClick={() => alert('Chức năng cập nhật thông tin sẽ sớm ra mắt trong bản nâng cấp tiếp theo!')}>Cập nhật thông tin</button>
+              <button className="btn btn-primary" style={{ marginTop: '32px' }} onClick={() => alert('Chức năng cập nhật thông tin sẽ sớm ra mắt trong bản nâng cấp tiếp theo!')}>
+                Cập nhật thông tin
+              </button>
             </>
           )}
 

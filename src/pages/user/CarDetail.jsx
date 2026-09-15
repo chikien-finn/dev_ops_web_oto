@@ -1,11 +1,13 @@
 import { useParams, Link } from 'react-router-dom';
 import { Settings, Fuel, Calendar, ArrowLeft, CheckCircle2 } from 'lucide-react';
-import { allCars } from '../data/cars';
-import '../styles/CarDetail.css';
+import { useCars } from '../../context/CarContext';
+import { FALLBACK_CAR_IMAGE } from '../../data/cars';
+import '../../styles/user/CarDetail.css';
 
 export default function CarDetail() {
   const { id } = useParams();
-  const car = allCars.find(c => c.id === parseInt(id));
+  const { cars } = useCars();
+  const car = cars.find(c => c.id === parseInt(id));
 
   if (!car) {
     return (
@@ -19,14 +21,14 @@ export default function CarDetail() {
   return (
     <div className="car-detail-page">
       {/* Hero Header */}
-      <div className="detail-hero" style={{ backgroundImage: `url(${car.image})` }}>
+      <div className="detail-hero" style={{ backgroundImage: `url(${car.image || FALLBACK_CAR_IMAGE})` }}>
         <div className="detail-hero-overlay">
           <div className="container" style={{ width: '100%' }}>
             <Link to="/cars" className="back-link">
               <ArrowLeft size={20} /> Quay lại
             </Link>
             <h1 className="detail-title">{car.name}</h1>
-            <p className="detail-price">${car.price.toLocaleString()}</p>
+            <p className="detail-price">${Number(car.price).toLocaleString()}</p>
           </div>
         </div>
       </div>

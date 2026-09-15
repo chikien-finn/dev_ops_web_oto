@@ -1,3 +1,5 @@
+export const FALLBACK_CAR_IMAGE = 'https://images.unsplash.com/photo-1617469767053-d3b523a0b982?auto=format&fit=crop&w=800&q=80';
+
 export const allCars = [
   {
     id: 1,
@@ -12,7 +14,7 @@ export const allCars = [
     id: 2,
     name: 'Porsche 911 Turbo S',
     price: 205000,
-    image: 'https://images.unsplash.com/photo-1503376269389-90d20ef3571d?auto=format&fit=crop&w=800&q=80',
+    image: 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=800&q=80',
     year: 2025,
     type: 'Coupe',
     fuel: 'Gasoline'
@@ -39,7 +41,7 @@ export const allCars = [
     id: 5,
     name: 'Range Rover SV Autobiography',
     price: 215000,
-    image: 'https://images.unsplash.com/photo-1606016159991-d812bd2d5eb3?auto=format&fit=crop&w=800&q=80',
+    image: 'https://images.unsplash.com/photo-1563720223185-11003d516935?auto=format&fit=crop&w=800&q=80',
     year: 2025,
     type: 'SUV',
     fuel: 'Hybrid'

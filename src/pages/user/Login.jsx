@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { User, Lock, ArrowRight, AlertCircle, CheckCircle2 } from 'lucide-react';
-import '../styles/Login.css';
-import { useAuth } from '../context/AuthContext';
+import '../../styles/user/Login.css';
+import { useAuth } from '../../context/AuthContext';
 
 export default function Login() {
   const location = useLocation();
@@ -24,7 +24,11 @@ export default function Login() {
 
     const result = login(username, password);
     if (result.success) {
-      navigate('/');
+      if (result.user?.role === 'admin') {
+        navigate('/admin');
+      } else {
+        navigate('/');
+      }
     } else {
       setError(result.message || 'Tên đăng nhập hoặc mật khẩu không chính xác.');
     }
@@ -71,7 +75,7 @@ export default function Login() {
           <div className="form-group login-password-group">
             <div className="login-label-row">
               <label className="login-label">Mật khẩu</label>
-              <a href="#" className="login-forgot-password" onClick={(e) => { e.preventDefault(); alert('Vui lòng liên hệ quản trị viên hoặc sử dụng tài khoản mẫu: user123 / 123456'); }}>Quên mật khẩu?</a>
+              <a href="#" className="login-forgot-password" onClick={(e) => { e.preventDefault(); alert('Tài khoản mẫu: user123 / 123456 (User) hoặc admin / admin123 (Admin)'); }}>Quên mật khẩu?</a>
             </div>
             <div className="login-input-wrapper">
               <Lock size={18} className="login-input-icon" />

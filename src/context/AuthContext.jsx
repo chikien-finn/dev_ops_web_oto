@@ -4,6 +4,17 @@ const AuthContext = createContext();
 
 const DEFAULT_USERS = [
   {
+    id: 'user_admin_1',
+    username: 'admin',
+    password: 'admin123',
+    name: 'Quản Trị Viên',
+    email: 'admin@autopremium.com',
+    phone: '0999 888 777',
+    address: 'Trụ sở AutoPremium, Hà Nội',
+    role: 'admin',
+    favorites: []
+  },
+  {
     id: 'user_default_1',
     username: 'user123',
     password: '123456',
@@ -11,6 +22,7 @@ const DEFAULT_USERS = [
     email: 'user123@gmail.com',
     phone: '0123 456 789',
     address: 'Hà Nội, Việt Nam',
+    role: 'user',
     favorites: []
   }
 ];
@@ -29,10 +41,16 @@ export function AuthProvider({ children }) {
     }
     try {
       const parsed = JSON.parse(stored);
-      // Đảm bảo user123 mặc định luôn khả dụng nếu danh sách rỗng
       if (!Array.isArray(parsed) || parsed.length === 0) {
         localStorage.setItem('registered_users', JSON.stringify(DEFAULT_USERS));
         return DEFAULT_USERS;
+      }
+      // Đảm bảo tài khoản admin luôn có trong danh sách
+      const hasAdmin = parsed.some(u => u.username === 'admin');
+      if (!hasAdmin) {
+        const merged = [DEFAULT_USERS[0], ...parsed];
+        localStorage.setItem('registered_users', JSON.stringify(merged));
+        return merged;
       }
       return parsed;
     } catch {
@@ -66,6 +84,7 @@ export function AuthProvider({ children }) {
       password: userData.password,
       phone: userData.phone?.trim() || '',
       address: userData.address?.trim() || 'Hà Nội, Việt Nam',
+      role: userData.role || (cleanUsername === 'admin' ? 'admin' : 'user'),
       favorites: []
     };
 
@@ -77,7 +96,11 @@ export function AuthProvider({ children }) {
   const login = (usernameOrData, password) => {
     // Trường hợp gọi với object trực tiếp
     if (typeof usernameOrData === 'object' && usernameOrData !== null) {
-      const userToSave = { ...usernameOrData, favorites: usernameOrData.favorites || [] };
+      const userToSave = { 
+        ...usernameOrData, 
+        role: usernameOrData.role || (usernameOrData.username === 'admin' ? 'admin' : 'user'),
+        favorites: usernameOrData.favorites || [] 
+      };
       setUser(userToSave);
       localStorage.setItem('user', JSON.stringify(userToSave));
       return { success: true, user: userToSave };
@@ -103,6 +126,7 @@ export function AuthProvider({ children }) {
       email: matchedUser.email,
       phone: matchedUser.phone,
       address: matchedUser.address,
+      role: matchedUser.role || (matchedUser.username === 'admin' ? 'admin' : 'user'),
       favorites: matchedUser.favorites || []
     };
 
@@ -114,6 +138,21 @@ export function AuthProvider({ children }) {
   const logout = () => {
     setUser(null);
     localStorage.removeItem('user');
+  };
+
+  const getAllUsers = () => {
+    return getRegisteredUsers();
+  };
+
+  const deleteUser = (userId) => {
+    const users = getRegisteredUsers();
+    const targetUser = users.find(u => u.id === userId);
+    if (targetUser && targetUser.username === 'admin') {
+      return { success: false, message: 'Không thể xóa tài khoản Admin mặc định.' };
+    }
+    const filtered = users.filter(u => u.id !== userId);
+    localStorage.setItem('registered_users', JSON.stringify(filtered));
+    return { success: true };
   };
 
   const toggleFavorite = (carId) => {
@@ -141,7 +180,7 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, register, login, logout, toggleFavorite }}>
+    <AuthContext.Provider value={{ user, register, login, logout, toggleFavorite, getAllUsers, deleteUser }}>
       {children}
     </AuthContext.Provider>
   );
