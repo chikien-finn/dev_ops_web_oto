@@ -23,7 +23,7 @@ const SAMPLE_IMAGES = [
 
 export default function Admin() {
   const { user, login, getAllUsers, deleteUser } = useAuth();
-  const { cars, addCar, updateCar, deleteCar, resetCars } = useCars();
+  const { cars, addCar, updateCar, deleteCar } = useCars();
 
   const [activeTab, setActiveTab] = useState('cars'); // 'cars' or 'users'
   const [searchTerm, setSearchTerm] = useState('');
@@ -152,8 +152,8 @@ export default function Admin() {
           <button onClick={openAddModal} className="btn btn-primary">
             <Plus size={18} /> Thêm Mẫu Xe Mới
           </button>
-          <button onClick={() => { if (window.confirm('Khôi phục danh sách xe mặc định ban đầu?')) resetCars(); }} className="btn btn-outline" title="Khôi phục xe gốc">
-            <RotateCcw size={16} /> Reset
+          <button onClick={() => window.location.reload()} className="btn btn-outline" title="Tải lại trang">
+            <RotateCcw size={16} /> Tải Lại
           </button>
         </div>
       </div>
