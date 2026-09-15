@@ -1,5 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { Car, User, LogIn, LogOut, Shield } from 'lucide-react';
+import { Car, User, LogIn, LogOut, Shield, Heart } from 'lucide-react';
 import '../../styles/user/Navbar.css';
 import { useAuth } from '../../context/AuthContext';
 
@@ -12,6 +12,8 @@ export default function Navbar() {
     navigate('/');
   };
 
+  const favCount = user?.favorites?.length || 0;
+
   return (
     <nav className="navbar">
       <div className="container navbar-container">
@@ -22,6 +24,13 @@ export default function Navbar() {
         <ul className="navbar-links">
           <li><Link to="/">Trang Chủ</Link></li>
           <li><Link to="/cars">Sản Phẩm</Link></li>
+          <li>
+            <Link to="/favorites" className="nav-fav-link">
+              <Heart size={18} fill={favCount > 0 ? '#ef4444' : 'none'} color={favCount > 0 ? '#ef4444' : 'currentColor'} />
+              <span>Yêu Thích</span>
+              {favCount > 0 && <span className="nav-fav-badge">{favCount}</span>}
+            </Link>
+          </li>
           {user?.role === 'admin' && (
             <li>
               <Link to="/admin" style={{ color: 'var(--accent-hover)', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '4px' }}>

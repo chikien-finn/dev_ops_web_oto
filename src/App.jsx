@@ -7,6 +7,7 @@ import CarDetail from './pages/user/CarDetail';
 import Login from './pages/user/Login';
 import Register from './pages/user/Register';
 import Profile from './pages/user/Profile';
+import Favorites from './pages/user/Favorites';
 import Admin from './pages/admin/Admin';
 
 function App() {
@@ -19,6 +20,7 @@ function App() {
             <Route path="/" element={<Home />} />
             <Route path="/cars" element={<Cars />} />
             <Route path="/car/:id" element={<CarDetail />} />
+            <Route path="/favorites" element={<Favorites />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/profile" element={<Profile />} />

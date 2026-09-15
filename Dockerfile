@@ -13,6 +13,9 @@ RUN npm run build
 # Stage 2: Dùng Nginx siêu nhẹ để chạy web
 FROM nginx:alpine
 
+# Copy cấu hình Nginx xử lý SPA (tránh lỗi 404 khi vào /cars, /admin, /profile)
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+
 # Copy file đã build ở Stage 1 sang Nginx
 COPY --from=builder /app/dist /usr/share/nginx/html
 

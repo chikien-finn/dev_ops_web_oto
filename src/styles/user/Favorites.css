@@ -1,0 +1,71 @@
+.favorites-page {
+  padding: 40px 20px 80px;
+  min-height: 80vh;
+}
+
+.favorites-header {
+  margin-bottom: 40px;
+}
+
+.favorites-title-row {
+  margin-top: 16px;
+}
+
+.title-with-badge {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.fav-count-pill {
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  color: #ef4444;
+  font-size: 0.85rem;
+  font-weight: 700;
+  padding: 6px 14px;
+  border-radius: 20px;
+  letter-spacing: 0.5px;
+}
+
+.favorites-subtitle {
+  color: var(--text-secondary);
+  font-size: 1.05rem;
+  margin-top: 10px;
+}
+
+.favorites-empty-card {
+  max-width: 600px;
+  margin: 60px auto;
+  text-align: center;
+  padding: 50px 30px;
+}
+
+.fav-icon-wrapper {
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 24px;
+}
+
+.fav-icon-empty {
+  color: #ef4444;
+}
+
+.favorites-empty-card h2 {
+  font-size: 1.8rem;
+  margin-bottom: 12px;
+  color: #ffffff;
+}
+
+.favorites-empty-card p {
+  color: var(--text-secondary);
+  line-height: 1.6;
+  font-size: 1rem;
+}

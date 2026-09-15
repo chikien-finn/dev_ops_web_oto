@@ -1,21 +1,27 @@
 import { useState, useMemo } from 'react';
 import CarCard from '../../components/user/CarCard';
 import { useCars } from '../../context/CarContext';
-import { Search, Filter } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
+import { Search, Filter, Heart } from 'lucide-react';
 import '../../styles/user/Cars.css';
 
 export default function Cars() {
   const { cars } = useCars();
+  const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('All');
+  const [onlyFavorites, setOnlyFavorites] = useState(false);
+
+  const favCount = user?.favorites?.length || 0;
 
   const filteredCars = useMemo(() => {
     return cars.filter(car => {
       const matchesSearch = car.name.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesType = filterType === 'All' || car.type === filterType;
-      return matchesSearch && matchesType;
+      const matchesFav = !onlyFavorites || (user?.favorites && user.favorites.includes(car.id));
+      return matchesSearch && matchesType && matchesFav;
     });
-  }, [cars, searchTerm, filterType]);
+  }, [cars, searchTerm, filterType, onlyFavorites, user]);
 
   const uniqueTypes = ['All', ...new Set(cars.map(car => car.type))];
 
@@ -53,6 +59,21 @@ export default function Cars() {
             ))}
           </select>
         </div>
+
+        <button 
+          onClick={() => {
+            if (!user && !onlyFavorites) {
+              alert('Vui lòng đăng nhập để xem danh sách xe bạn đã yêu thích!');
+              return;
+            }
+            setOnlyFavorites(!onlyFavorites);
+          }}
+          className={`cars-fav-toggle-btn ${onlyFavorites ? 'active' : ''}`}
+          title="Lọc các xe bạn đã bấm tim yêu thích"
+        >
+          <Heart size={18} fill={onlyFavorites ? '#ef4444' : 'none'} color={onlyFavorites ? '#ef4444' : 'currentColor'} />
+          <span>Mục Yêu Thích {favCount > 0 ? `(${favCount})` : ''}</span>
+        </button>
       </div>
       
       <div className="cars-grid">
