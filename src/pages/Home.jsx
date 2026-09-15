@@ -3,8 +3,10 @@ import { ChevronRight, Star } from 'lucide-react';
 import CarCard from '../components/CarCard';
 import '../styles/Home.css';
 import { featuredCars } from '../data/cars';
+import { useAuth } from '../context/AuthContext';
 
 export default function Home() {
+  const { user } = useAuth();
 
   return (
     <div className="home-page">
@@ -20,9 +22,11 @@ export default function Home() {
             <Link to="/cars" className="btn btn-primary btn-lg">
               Khám Phá Ngay <ChevronRight size={20} />
             </Link>
-            <Link to="/register" className="btn btn-outline btn-lg">
-              Tạo Tài Khoản
-            </Link>
+            {!user && (
+              <Link to="/register" className="btn btn-outline btn-lg">
+                Tạo Tài Khoản
+              </Link>
+            )}
           </div>
         </div>
       </section>
