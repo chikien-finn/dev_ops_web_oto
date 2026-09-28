@@ -15,6 +15,8 @@ const dbName = process.env.DB_DATABASE || 'db_web_oto';
 const dbPort = parseInt(process.env.DB_PORT || '1433', 10);
 const dbInstance = process.env.DB_INSTANCE || undefined;
 
+const isCI = Boolean(process.env.CI);
+
 const baseConfig = {
   user: dbUser,
   password: dbPassword,
@@ -24,7 +26,7 @@ const baseConfig = {
     encrypt: false,
     trustServerCertificate: true,
     enableArithAbort: true,
-    connectTimeout: 8000
+    connectTimeout: isCI ? 2000 : 8000
   },
   pool: {
     max: 10,
@@ -43,7 +45,7 @@ let pool = null;
 const delay = (ms) => new Promise(res => setTimeout(res, ms));
 
 // Kết nối với cơ chế Retry (rất quan trọng khi chạy trong Docker)
-export async function getPool(retries = 12, delayMs = 3000) {
+export async function getPool(retries = (process.env.CI ? 2 : 12), delayMs = (process.env.CI ? 1000 : 3000)) {
   if (pool) return pool;
 
   for (let i = 1; i <= retries; i++) {
@@ -211,8 +213,10 @@ export async function initializeDatabase() {
     }
 
     console.log('✅ Hệ thống bảng và dữ liệu SQL Server đã sẵn sàng 100%!');
+    return true;
   } catch (err) {
     console.error('❌ Lỗi khởi tạo cấu trúc SQL Server:', err);
+    return false;
   }
 }
 
