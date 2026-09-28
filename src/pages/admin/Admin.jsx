@@ -1,15 +1,17 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { 
-  Car, Users, DollarSign, Layers, Plus, Search, 
-  ShieldAlert, RotateCcw, ShieldCheck 
+  Car, Users, DollarSign, Plus, Search, 
+  ShieldAlert, RotateCcw, ShieldCheck, CalendarCheck 
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useCars } from '../../context/CarContext';
 import StatCard from '../../components/admin/StatCard';
 import CarTable from '../../components/admin/CarTable';
 import UserTable from '../../components/admin/UserTable';
+import BookingTable from '../../components/admin/BookingTable';
 import CarModal from '../../components/admin/CarModal';
+import api from '../../services/api';
 import '../../styles/admin/Admin.css';
 
 const SAMPLE_IMAGES = [
@@ -23,11 +25,14 @@ const SAMPLE_IMAGES = [
 
 export default function Admin() {
   const { user, login, getAllUsers, deleteUser } = useAuth();
-  const { cars, addCar, updateCar, deleteCar } = useCars();
+  const { cars, addCar, updateCar, deleteCar, resetCars } = useCars();
 
-  const [activeTab, setActiveTab] = useState('cars'); // 'cars' or 'users'
+  const [activeTab, setActiveTab] = useState('cars'); // 'cars', 'users', 'bookings'
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('All');
+
+  // Bookings state
+  const [bookings, setBookings] = useState([]);
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -40,6 +45,22 @@ export default function Admin() {
     fuel: 'Gasoline',
     image: ''
   });
+
+  // Fetch bookings from backend
+  const loadBookings = async () => {
+    try {
+      const res = await api.getBookings();
+      if (res.success && Array.isArray(res.data)) {
+        setBookings(res.data);
+      }
+    } catch (err) {
+      console.warn('Lỗi tải danh sách bookings:', err);
+    }
+  };
+
+  useEffect(() => {
+    loadBookings();
+  }, []);
 
   // Access Control: Check if user is admin
   const isAdmin = user && user.role === 'admin';
@@ -75,6 +96,7 @@ export default function Admin() {
   const totalValue = cars.reduce((sum, car) => sum + (Number(car.price) || 0), 0);
   const allUsersList = getAllUsers ? getAllUsers() : [];
   const uniqueTypes = ['All', ...new Set(cars.map(c => c.type))];
+  const pendingBookingsCount = bookings.filter(b => b.status === 'pending').length;
 
   // Filtered Cars
   const filteredCars = cars.filter(car => {
@@ -134,8 +156,28 @@ export default function Admin() {
   const handleDeleteUser = (id, username) => {
     if (window.confirm(`Bạn có chắc chắn muốn xóa tài khoản người dùng "${username}" không?`)) {
       const res = deleteUser(id);
-      if (!res.success) {
+      if (res && !res.success) {
         alert(res.message);
+      }
+    }
+  };
+
+  const handleBookingStatusChange = async (id, newStatus) => {
+    setBookings(prev => prev.map(b => b.id === id ? { ...b, status: newStatus } : b));
+    try {
+      await api.updateBookingStatus(id, newStatus);
+    } catch (err) {
+      console.warn('Lỗi cập nhật booking:', err);
+    }
+  };
+
+  const handleDeleteBooking = async (id, customerName) => {
+    if (window.confirm(`Bạn có chắc chắn muốn xóa lịch hẹn của khách "${customerName}" không?`)) {
+      setBookings(prev => prev.filter(b => b.id !== id));
+      try {
+        await api.deleteBooking(id);
+      } catch (err) {
+        console.warn('Lỗi xóa booking:', err);
       }
     }
   };
@@ -146,14 +188,14 @@ export default function Admin() {
       <div className="admin-header">
         <div className="admin-title-area">
           <h1>Bảng Điều Khiển Quản Trị</h1>
-          <p>Quản lý toàn bộ danh mục xe cao cấp và tài khoản người dùng hệ thống</p>
+          <p>Quản lý danh mục xe cao cấp, tài khoản người dùng và yêu cầu lái thử từ khách</p>
         </div>
         <div className="admin-header-actions">
           <button onClick={openAddModal} className="btn btn-primary">
             <Plus size={18} /> Thêm Mẫu Xe Mới
           </button>
-          <button onClick={() => window.location.reload()} className="btn btn-outline" title="Tải lại trang">
-            <RotateCcw size={16} /> Tải Lại
+          <button onClick={() => { resetCars(); loadBookings(); }} className="btn btn-outline" title="Khôi phục dữ liệu ban đầu">
+            <RotateCcw size={16} /> Khôi Phục Mẫu
           </button>
         </div>
       </div>
@@ -163,7 +205,11 @@ export default function Admin() {
         <StatCard icon={Car} value={cars.length} label="Tổng số xe trong kho" />
         <StatCard icon={DollarSign} value={`$${(totalValue / 1000).toFixed(0)}k`} label="Tổng giá trị bộ sưu tập" />
         <StatCard icon={Users} value={allUsersList.length} label="Thành viên đã đăng ký" />
-        <StatCard icon={Layers} value={uniqueTypes.length - 1} label="Phân khúc xe khác nhau" />
+        <StatCard 
+          icon={CalendarCheck} 
+          value={`${pendingBookingsCount} chờ`} 
+          label={`Đơn lái thử (${bookings.length} tổng)`} 
+        />
       </div>
 
       {/* Navigation Tabs */}
@@ -179,6 +225,25 @@ export default function Admin() {
           onClick={() => setActiveTab('users')}
         >
           <Users size={18} /> Danh Sách Người Dùng ({allUsersList.length})
+        </button>
+        <button 
+          className={`admin-tab-btn ${activeTab === 'bookings' ? 'active' : ''}`}
+          onClick={() => setActiveTab('bookings')}
+        >
+          <CalendarCheck size={18} /> Lịch Hẹn Lái Thử ({bookings.length})
+          {pendingBookingsCount > 0 && (
+            <span style={{
+              marginLeft: '8px',
+              padding: '2px 8px',
+              borderRadius: '99px',
+              fontSize: '0.75rem',
+              backgroundColor: '#ef4444',
+              color: '#fff',
+              fontWeight: 'bold'
+            }}>
+              {pendingBookingsCount}
+            </span>
+          )}
         </button>
       </div>
 
@@ -226,6 +291,15 @@ export default function Admin() {
           users={allUsersList} 
           currentUser={user} 
           onDeleteUser={handleDeleteUser} 
+        />
+      )}
+
+      {/* TAB 3: BOOKINGS MANAGEMENT */}
+      {activeTab === 'bookings' && (
+        <BookingTable 
+          bookings={bookings}
+          onStatusChange={handleBookingStatusChange}
+          onDeleteBooking={handleDeleteBooking}
         />
       )}
 

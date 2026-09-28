@@ -9,6 +9,7 @@ import { useCars } from '../../context/CarContext';
 import { useAuth } from '../../context/AuthContext';
 import { FALLBACK_CAR_IMAGE } from '../../data/cars';
 import CarCard from '../../components/user/CarCard';
+import api from '../../services/api';
 import '../../styles/user/CarDetail.css';
 
 const CAR_SPEC_DETAILS = {
@@ -157,8 +158,17 @@ export default function CarDetail() {
     alert('Đã sao chép liên kết chi tiết xe vào bộ nhớ tạm!');
   };
 
-  const handleBookingSubmit = (e) => {
+  const handleBookingSubmit = async (e) => {
     e.preventDefault();
+    try {
+      await api.createBooking({
+        carId: car.id,
+        carName: car.name,
+        ...bookingForm
+      });
+    } catch (err) {
+      console.warn('Lỗi khi gửi yêu cầu lái thử lên server:', err);
+    }
     setBookingSent(true);
   };
 

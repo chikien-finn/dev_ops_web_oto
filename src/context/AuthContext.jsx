@@ -1,4 +1,5 @@
-import { createContext, useState, useContext } from 'react';
+import { createContext, useState, useContext, useEffect } from 'react';
+import api from '../services/api';
 
 const AuthContext = createContext();
 
@@ -12,7 +13,7 @@ const DEFAULT_USERS = [
     phone: '0999 888 777',
     address: 'Trụ sở AutoPremium, Hà Nội',
     role: 'admin',
-    favorites: []
+    favorites: [1, 2]
   },
   {
     id: 'user_default_1',
@@ -23,7 +24,7 @@ const DEFAULT_USERS = [
     phone: '0123 456 789',
     address: 'Hà Nội, Việt Nam',
     role: 'user',
-    favorites: []
+    favorites: [3]
   }
 ];
 
@@ -33,46 +34,60 @@ export function AuthProvider({ children }) {
     return storedUser ? JSON.parse(storedUser) : null;
   });
 
-  const getRegisteredUsers = () => {
+  const [usersList, setUsersList] = useState(() => {
     const stored = localStorage.getItem('registered_users');
-    if (!stored) {
-      localStorage.setItem('registered_users', JSON.stringify(DEFAULT_USERS));
-      return DEFAULT_USERS;
+    if (stored) {
+      try {
+        return JSON.parse(stored);
+      } catch {
+        // Fallback
+      }
     }
+    return DEFAULT_USERS;
+  });
+
+  // Sync users list from backend
+  const fetchAllUsers = async () => {
     try {
-      const parsed = JSON.parse(stored);
-      if (!Array.isArray(parsed) || parsed.length === 0) {
-        localStorage.setItem('registered_users', JSON.stringify(DEFAULT_USERS));
-        return DEFAULT_USERS;
+      const res = await api.getUsers();
+      if (res.success && Array.isArray(res.data)) {
+        setUsersList(res.data);
+        localStorage.setItem('registered_users', JSON.stringify(res.data));
+        return res.data;
       }
-      // Đảm bảo tài khoản admin luôn có trong danh sách
-      const hasAdmin = parsed.some(u => u.username === 'admin');
-      if (!hasAdmin) {
-        const merged = [DEFAULT_USERS[0], ...parsed];
-        localStorage.setItem('registered_users', JSON.stringify(merged));
-        return merged;
-      }
-      return parsed;
-    } catch {
-      localStorage.setItem('registered_users', JSON.stringify(DEFAULT_USERS));
-      return DEFAULT_USERS;
+    } catch (err) {
+      console.warn('Không thể tải users từ backend:', err);
     }
+    return usersList;
   };
 
-  const register = (userData) => {
-    const users = getRegisteredUsers();
+  useEffect(() => {
+    fetchAllUsers();
+  }, []);
+
+  const register = async (userData) => {
+    // 1. Try Backend API first
+    try {
+      const res = await api.register(userData);
+      if (res.success && res.user) {
+        fetchAllUsers();
+        return { success: true, user: res.user };
+      }
+      if (res.message && !res.isNetworkError) {
+        return { success: false, message: res.message };
+      }
+    } catch {
+      // Fallback to local
+    }
+
+    // 2. Offline fallback
     const cleanUsername = userData.username?.trim().toLowerCase();
     const cleanEmail = userData.email?.trim().toLowerCase();
 
-    // Kiểm tra trùng username
-    const usernameExists = users.some(u => u.username?.toLowerCase() === cleanUsername);
-    if (usernameExists) {
+    if (usersList.some(u => u.username?.toLowerCase() === cleanUsername)) {
       return { success: false, message: 'Tên đăng nhập đã tồn tại trên hệ thống.' };
     }
-
-    // Kiểm tra trùng email
-    const emailExists = users.some(u => u.email?.toLowerCase() === cleanEmail);
-    if (emailExists) {
+    if (usersList.some(u => u.email?.toLowerCase() === cleanEmail)) {
       return { success: false, message: 'Email này đã được sử dụng cho tài khoản khác.' };
     }
 
@@ -88,13 +103,14 @@ export function AuthProvider({ children }) {
       favorites: []
     };
 
-    const updatedUsers = [...users, newUser];
-    localStorage.setItem('registered_users', JSON.stringify(updatedUsers));
+    const updated = [...usersList, newUser];
+    setUsersList(updated);
+    localStorage.setItem('registered_users', JSON.stringify(updated));
     return { success: true, user: newUser };
   };
 
-  const login = (usernameOrData, password) => {
-    // Trường hợp gọi với object trực tiếp
+  const login = async (usernameOrData, password) => {
+    // Direct user object bypass
     if (typeof usernameOrData === 'object' && usernameOrData !== null) {
       const userToSave = { 
         ...usernameOrData, 
@@ -106,11 +122,24 @@ export function AuthProvider({ children }) {
       return { success: true, user: userToSave };
     }
 
-    // Trường hợp đăng nhập với username/email và password
-    const users = getRegisteredUsers();
-    const identifier = usernameOrData?.trim().toLowerCase();
+    // 1. Try Backend API
+    try {
+      const res = await api.login(usernameOrData, password);
+      if (res.success && res.user) {
+        setUser(res.user);
+        localStorage.setItem('user', JSON.stringify(res.user));
+        return { success: true, user: res.user };
+      }
+      if (res.message && !res.isNetworkError) {
+        return { success: false, message: res.message };
+      }
+    } catch {
+      // Fallback
+    }
 
-    const matchedUser = users.find(u => 
+    // 2. Offline fallback
+    const identifier = usernameOrData?.trim().toLowerCase();
+    const matchedUser = usersList.find(u => 
       (u.username?.toLowerCase() === identifier || u.email?.toLowerCase() === identifier) &&
       u.password === password
     );
@@ -140,22 +169,53 @@ export function AuthProvider({ children }) {
     localStorage.removeItem('user');
   };
 
-  const getAllUsers = () => {
-    return getRegisteredUsers();
+  const updateProfile = async (profileData) => {
+    if (!user) return { success: false, message: 'Chưa đăng nhập' };
+
+    const updatedUser = {
+      ...user,
+      name: profileData.name !== undefined ? profileData.name : user.name,
+      phone: profileData.phone !== undefined ? profileData.phone : user.phone,
+      address: profileData.address !== undefined ? profileData.address : user.address
+    };
+
+    setUser(updatedUser);
+    localStorage.setItem('user', JSON.stringify(updatedUser));
+
+    // Backend sync
+    try {
+      await api.updateProfile({ id: user.id, ...profileData });
+    } catch (err) {
+      console.warn('Lỗi đồng bộ hồ sơ lên backend:', err);
+    }
+
+    return { success: true, user: updatedUser };
   };
 
-  const deleteUser = (userId) => {
-    const users = getRegisteredUsers();
-    const targetUser = users.find(u => u.id === userId);
+  const getAllUsers = () => {
+    return usersList;
+  };
+
+  const deleteUser = async (userId) => {
+    const targetUser = usersList.find(u => u.id === userId);
     if (targetUser && targetUser.username === 'admin') {
       return { success: false, message: 'Không thể xóa tài khoản Admin mặc định.' };
     }
-    const filtered = users.filter(u => u.id !== userId);
+
+    const filtered = usersList.filter(u => u.id !== userId);
+    setUsersList(filtered);
     localStorage.setItem('registered_users', JSON.stringify(filtered));
+
+    try {
+      await api.deleteUser(userId);
+    } catch (err) {
+      console.warn('Lỗi xóa user trên backend:', err);
+    }
+
     return { success: true };
   };
 
-  const toggleFavorite = (carId) => {
+  const toggleFavorite = async (carId) => {
     if (!user) return;
     
     let updatedFavorites;
@@ -170,17 +230,26 @@ export function AuthProvider({ children }) {
     setUser(updatedUser);
     localStorage.setItem('user', JSON.stringify(updatedUser));
 
-    // Đồng bộ vào danh sách registered_users nếu có
-    const users = getRegisteredUsers();
-    const userIndex = users.findIndex(u => u.username?.toLowerCase() === user.username?.toLowerCase());
-    if (userIndex !== -1) {
-      users[userIndex].favorites = updatedFavorites;
-      localStorage.setItem('registered_users', JSON.stringify(users));
+    // Backend sync
+    try {
+      await api.toggleFavorite(user.id, carId);
+    } catch (err) {
+      console.warn('Lỗi toggle favorite lên backend:', err);
     }
   };
 
   return (
-    <AuthContext.Provider value={{ user, register, login, logout, toggleFavorite, getAllUsers, deleteUser }}>
+    <AuthContext.Provider value={{ 
+      user, 
+      register, 
+      login, 
+      logout, 
+      updateProfile, 
+      toggleFavorite, 
+      getAllUsers, 
+      fetchAllUsers, 
+      deleteUser 
+    }}>
       {children}
     </AuthContext.Provider>
   );

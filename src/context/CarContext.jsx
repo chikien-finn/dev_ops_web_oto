@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { allCars as initialCars, FALLBACK_CAR_IMAGE } from '../data/cars';
+import api from '../services/api';
 
 const CarContext = createContext();
 
@@ -10,31 +11,39 @@ export function CarProvider({ children }) {
       try {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          // Tự động sửa các link ảnh cũ bị lỗi 404 trong localStorage
-          const fixedCars = parsed.map(c => {
-            if (c.image && c.image.includes('1503376269389-90d20ef3571d')) {
-              return { ...c, image: 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=800&q=80' };
-            }
-            if (c.image && c.image.includes('1606016159991-d812bd2d5eb3')) {
-              return { ...c, image: 'https://images.unsplash.com/photo-1563720223185-11003d516935?auto=format&fit=crop&w=800&q=80' };
-            }
-            return c;
-          });
-          return fixedCars;
+          return parsed;
         }
       } catch {
-        // Fallback to initial
+        // Fallback
       }
     }
-    localStorage.setItem('autopremium_cars', JSON.stringify(initialCars));
     return initialCars;
   });
 
-  useEffect(() => {
-    localStorage.setItem('autopremium_cars', JSON.stringify(cars));
-  }, [cars]);
+  const [loading, setLoading] = useState(false);
 
-  const addCar = (carData) => {
+  // Sync with Backend on mount
+  useEffect(() => {
+    let isMounted = true;
+    async function loadCarsFromApi() {
+      setLoading(true);
+      try {
+        const res = await api.getCars();
+        if (isMounted && res.success && Array.isArray(res.data) && res.data.length > 0) {
+          setCars(res.data);
+          localStorage.setItem('autopremium_cars', JSON.stringify(res.data));
+        }
+      } catch (err) {
+        console.warn('Sử dụng dữ liệu offline cho danh sách xe:', err);
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    }
+    loadCarsFromApi();
+    return () => { isMounted = false; };
+  }, []);
+
+  const addCar = async (carData) => {
     const newCar = {
       ...carData,
       id: Date.now(),
@@ -45,11 +54,24 @@ export function CarProvider({ children }) {
       fuel: carData.fuel || 'Gasoline',
       image: carData.image?.trim() || FALLBACK_CAR_IMAGE
     };
+
+    // Optimistic UI update
     setCars(prev => [newCar, ...prev]);
+
+    // Backend sync
+    try {
+      const res = await api.createCar(newCar);
+      if (res.success && res.data) {
+        setCars(prev => prev.map(c => c.id === newCar.id ? res.data : c));
+      }
+    } catch (err) {
+      console.warn('Lỗi đồng bộ thêm xe lên backend:', err);
+    }
+
     return newCar;
   };
 
-  const updateCar = (id, updatedData) => {
+  const updateCar = async (id, updatedData) => {
     setCars(prev => prev.map(car => {
       if (car.id === id) {
         return {
@@ -65,21 +87,37 @@ export function CarProvider({ children }) {
       }
       return car;
     }));
+
+    try {
+      await api.updateCar(id, updatedData);
+    } catch (err) {
+      console.warn('Lỗi đồng bộ cập nhật xe lên backend:', err);
+    }
   };
 
-  const deleteCar = (id) => {
+  const deleteCar = async (id) => {
     setCars(prev => prev.filter(car => car.id !== id));
+    try {
+      await api.deleteCar(id);
+    } catch (err) {
+      console.warn('Lỗi đồng bộ xóa xe lên backend:', err);
+    }
   };
 
-  const resetCars = () => {
+  const resetCars = async () => {
     setCars(initialCars);
     localStorage.setItem('autopremium_cars', JSON.stringify(initialCars));
+    try {
+      await api.resetCars();
+    } catch (err) {
+      console.warn('Lỗi reset xe trên backend:', err);
+    }
   };
 
   const featuredCars = cars.slice(0, 3);
 
   return (
-    <CarContext.Provider value={{ cars, featuredCars, addCar, updateCar, deleteCar, resetCars }}>
+    <CarContext.Provider value={{ cars, featuredCars, loading, addCar, updateCar, deleteCar, resetCars }}>
       {children}
     </CarContext.Provider>
   );

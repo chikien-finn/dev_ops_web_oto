@@ -1,11 +1,70 @@
 version: '3.8'
 
 services:
-  web:
-    build: .                              # Build từ Dockerfile ở thư mục hiện tại
-    container_name: web_ban_oto_frontend  # Đặt tên cho container
+  # ==========================================
+  # 1. DATABASE SERVICE (Microsoft SQL Server)
+  # ==========================================
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: web_ban_oto_db
+    restart: always
+    environment:
+      - ACCEPT_EULA=Y
+      - MSSQL_SA_PASSWORD=Password123!
+      - MSSQL_PID=Developer
     ports:
-      - "8080:80"                         # Cổng máy thật 8080 -> Cổng 80 Nginx trong container
-    restart: always                       # Tự khởi động lại nếu container bị tắt hoặc server reboot
+      - "1433:1433"
+    volumes:
+      - sqlserver_data:/var/opt/mssql
+    networks:
+      - app-network
 
+  # ==========================================
+  # 2. BACKEND API SERVICE (Node.js Express)
+  # ==========================================
+  backend:
+    build: ./server
+    container_name: web_ban_oto_backend
+    restart: always
+    ports:
+      - "5000:5000"
+    environment:
+      - PORT=5000
+      - NODE_ENV=production
+      - DB_USER=sa
+      - DB_PASSWORD=Password123!
+      - DB_SERVER=sqlserver
+      - DB_DATABASE=db_web_oto
+      - DB_PORT=1433
+    depends_on:
+      - sqlserver
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:5000/api/health || exit 1"]
+      interval: 20s
+      timeout: 5s
+      retries: 5
+      start_period: 25s
+    networks:
+      - app-network
 
+  # ==========================================
+  # 3. FRONTEND SERVICE (React 19 + Nginx)
+  # ==========================================
+  web:
+    build: .
+    container_name: web_ban_oto_frontend
+    restart: always
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend
+    networks:
+      - app-network
+
+# Lưu trữ dữ liệu Database bền vững
+volumes:
+  sqlserver_data:
+
+networks:
+  app-network:
+    driver: bridge

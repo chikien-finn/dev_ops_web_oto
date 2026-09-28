@@ -1,0 +1,31 @@
+[
+  {
+    "id": "user_admin_1",
+    "username": "admin",
+    "password": "admin123",
+    "name": "Quản Trị Viên",
+    "email": "admin@autopremium.com",
+    "phone": "0999 888 777",
+    "address": "Trụ sở AutoPremium, Hà Nội",
+    "role": "admin",
+    "favorites": [
+      1,
+      2
+    ],
+    "createdAt": "2026-09-28T13:46:07.590Z"
+  },
+  {
+    "id": "user_default_1",
+    "username": "user123",
+    "password": "123456",
+    "name": "Nguyễn Văn A",
+    "email": "user123@gmail.com",
+    "phone": "0123 456 789",
+    "address": "Hà Nội, Việt Nam",
+    "role": "user",
+    "favorites": [
+      3
+    ],
+    "createdAt": "2026-09-28T13:46:07.591Z"
+  }
+]

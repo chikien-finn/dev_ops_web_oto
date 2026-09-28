@@ -1,54 +1,120 @@
-name: Deploy to Production
+name: AutoPremium CI/CD Pipeline
 
-# Tự động chạy khi push code lên nhánh main
 on:
   push:
     branches:
       - main
+  pull_request:
+    branches:
+      - main
 
 jobs:
-  build-and-push:
-    runs-on: ubuntu-latest # Chạy trên máy ảo Ubuntu
+  # ==========================================
+  # GIAI ĐOẠN 1: KIỂM THỬ TỰ ĐỘNG & LINTING (CI)
+  # ==========================================
+  quality-check:
+    name: Lint & Automated Tests
+    runs-on: ubuntu-latest
 
     steps:
-      # 1. Tải mã nguồn về máy ảo
       - name: Checkout source code
         uses: actions/checkout@v4
 
-      # 2. Khởi tạo Docker Buildx để tối ưu build
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies (Root & Server)
+        run: |
+          npm ci
+          cd server && npm ci && cd ..
+
+      - name: Run Frontend Linting (Oxlint)
+        run: npm run lint
+
+      - name: Run Backend API Automated Tests
+        run: npm test
+
+      - name: Test Frontend Production Build
+        run: npm run build
+
+  # ==========================================
+  # GIAI ĐOẠN 2: BUILD VÀ PUSH DOCKER IMAGES
+  # ==========================================
+  build-and-push:
+    name: Build & Push Docker Images
+    needs: quality-check
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      # 3. Dùng cache để các lần build sau nhanh hơn
-      - name: Cache Docker layers
-        uses: actions/cache@v3
-        with:
-          path: /tmp/.buildx-cache
-          key: ${{ runner.os }}-buildx-${{ github.sha }}
-          restore-keys: |
-            ${{ runner.os }}-buildx-
-
-      # 4. Đăng nhập Docker Hub bằng Secret
       - name: Login to Docker Hub
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      # 5. Build image và đẩy (push) lên Docker Hub
-      - name: Build and Push Docker image
+      # Build & Push Frontend Image
+      - name: Build & Push Frontend Image
         uses: docker/build-push-action@v5
         with:
           context: .
+          file: ./Dockerfile
           push: true
-          tags: ${{ secrets.DOCKER_USERNAME }}/web_ban_oto:latest
-          cache-from: type=local,src=/tmp/.buildx-cache
-          cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
+          tags: |
+            ${{ secrets.DOCKER_USERNAME }}/web_ban_oto_frontend:latest
+            ${{ secrets.DOCKER_USERNAME }}/web_ban_oto_frontend:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
-      # 6. Cập nhật cache mới cho lần chạy tiếp theo
-      - name: Move cache
-        run: |
-          rm -rf /tmp/.buildx-cache
-          mv /tmp/.buildx-cache-new /tmp/.buildx-cache
+      # Build & Push Backend Image
+      - name: Build & Push Backend Image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./server
+          file: ./server/Dockerfile
+          push: true
+          tags: |
+            ${{ secrets.DOCKER_USERNAME }}/web_ban_oto_backend:latest
+            ${{ secrets.DOCKER_USERNAME }}/web_ban_oto_backend:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
+  # ==========================================
+  # GIAI ĐOẠN 3: TRIỂN KHAI TỰ ĐỘNG (CD)
+  # ==========================================
+  deploy:
+    name: Deploy to Server via SSH
+    needs: build-and-push
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push' && vars.SSH_HOST != ''
+    runs-on: ubuntu-latest
 
+    steps:
+      - name: Checkout docker-compose
+        uses: actions/checkout@v4
+
+      - name: Deploy to Remote Server
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            cd ~/web_ban_oto || (mkdir -p ~/web_ban_oto && cd ~/web_ban_oto)
+            # Pull image mới nhất từ Docker Hub
+            docker pull ${{ secrets.DOCKER_USERNAME }}/web_ban_oto_frontend:latest
+            docker pull ${{ secrets.DOCKER_USERNAME }}/web_ban_oto_backend:latest
+            # Khởi động lại containers không làm gián đoạn dữ liệu
+            docker compose down
+            docker compose up -d --remove-orphans
+            # Kiểm tra trạng thái sức khỏe dịch vụ
+            sleep 5
+            docker ps
