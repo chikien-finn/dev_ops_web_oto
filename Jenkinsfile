@@ -3,7 +3,8 @@ pipeline {
 
     environment {
         DOCKERHUB_CREDENTIALS = 'docker-hub-creds'
-        DOCKER_USER = 'kienfinn'
+        DOCKERHUB_USER = 'kienfinn'
+        DB_PASSWORD = credentials('db-password')
     }
 
     stages {
@@ -32,7 +33,7 @@ pipeline {
 
         stage('Smoke Test') {
             steps {
-                sleep 5
+                sleep 10
                 sh '''
                     curl -f http://localhost:8081/api/health || exit 1
                 '''
