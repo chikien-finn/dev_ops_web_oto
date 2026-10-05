@@ -23,11 +23,31 @@ pipeline {
             }
         }
 
-        stage('Build & Deploy Local Stack') {
+        stage('Build Images') {
+            steps {
+                sh '''
+                    docker build -t ${DOCKERHUB_USER}/oto-api:${IMAGE_TAG} -t ${DOCKERHUB_USER}/oto-api:latest ./server
+                    docker build -t ${DOCKERHUB_USER}/oto-web:${IMAGE_TAG} -t ${DOCKERHUB_USER}/oto-web:latest .
+                '''
+            }
+        }
+
+        stage('Push Images to Docker Hub') {
+            steps {
+                sh '''
+                    docker push ${DOCKERHUB_USER}/oto-api:${IMAGE_TAG}
+                    docker push ${DOCKERHUB_USER}/oto-api:latest
+                    docker push ${DOCKERHUB_USER}/oto-web:${IMAGE_TAG}
+                    docker push ${DOCKERHUB_USER}/oto-web:latest
+                '''
+            }
+        }
+
+        stage('Deploy Local Stack') {
             steps {
                 sh '''
                     docker compose -f docker-compose.prod.yml down --remove-orphans || true
-                    docker compose -f docker-compose.prod.yml up -d --build
+                    docker compose -f docker-compose.prod.yml up -d
                 '''
             }
         }
