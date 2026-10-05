@@ -46,8 +46,8 @@ pipeline {
         stage('Deploy Local Stack') {
             steps {
                 sh '''
-                    docker compose -f docker-compose.prod.yml down --remove-orphans || true
-                    docker compose -f docker-compose.prod.yml up -d
+                    docker compose -p dev_ops_web_oto -f docker-compose.prod.yml down --remove-orphans || true
+                    docker compose -p dev_ops_web_oto -f docker-compose.prod.yml up -d
                 '''
             }
         }
