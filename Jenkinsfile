@@ -5,6 +5,7 @@ pipeline {
         DOCKERHUB_CREDENTIALS = 'docker-hub-creds'
         DOCKERHUB_USER = 'kienfinn'
         DB_PASSWORD = credentials('db-password')
+        IMAGE_TAG = "${BUILD_NUMBER}"
     }
 
     stages {
