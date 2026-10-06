@@ -1,9 +1,8 @@
 ---
 - name: Deploy Web Ban Oto with Docker Compose
   hosts: webservers
-  become: yes
   vars:
-    project_dir: "/opt/dev_ops_web_oto"
+    project_dir: "~/deploy_dev_ops_web_oto"
     dockerhub_user: "{{ lookup('env', 'DOCKERHUB_USER') | default('kienfinn', true) }}"
     image_tag: "{{ lookup('env', 'IMAGE_TAG') | default('latest', true) }}"
     docker_username: "{{ lookup('env', 'DOCKER_USERNAME') }}"
