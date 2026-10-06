@@ -1,0 +1,49 @@
+---
+- name: Deploy Web Ban Oto with Docker Compose
+  hosts: webservers
+  become: yes
+  vars:
+    project_dir: "/opt/dev_ops_web_oto"
+    dockerhub_user: "{{ lookup('env', 'DOCKERHUB_USER') | default('kienfinn', true) }}"
+    image_tag: "{{ lookup('env', 'IMAGE_TAG') | default('latest', true) }}"
+    docker_username: "{{ lookup('env', 'DOCKER_USERNAME') }}"
+    docker_password: "{{ lookup('env', 'DOCKER_PASSWORD') }}"
+    db_password: "{{ lookup('env', 'DB_PASSWORD') }}"
+
+  tasks:
+    - name: Create project directory
+      file:
+        path: "{{ project_dir }}"
+        state: directory
+        mode: '0755'
+
+    - name: Copy docker-compose.prod.yml to server
+      copy:
+        src: ../docker-compose.prod.yml
+        dest: "{{ project_dir }}/docker-compose.prod.yml"
+        mode: '0644'
+
+    - name: Log into Docker Hub
+      shell: "echo '{{ docker_password }}' | docker login -u '{{ docker_username }}' --password-stdin"
+      no_log: true
+      when: docker_password != ""
+
+    - name: Ensure .env file exists for Docker Compose
+      copy:
+        dest: "{{ project_dir }}/.env"
+        content: |
+          DB_PASSWORD={{ db_password }}
+        mode: '0600'
+
+    - name: Pull the latest Docker images
+      command: docker compose -p dev_ops_web_oto -f docker-compose.prod.yml pull
+      args:
+        chdir: "{{ project_dir }}"
+
+    - name: Restart the Docker Compose stack
+      command: docker compose -p dev_ops_web_oto -f docker-compose.prod.yml up -d --remove-orphans
+      args:
+        chdir: "{{ project_dir }}"
+
+    - name: Log out of Docker Hub
+      command: docker logout

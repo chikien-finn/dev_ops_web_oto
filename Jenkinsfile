@@ -43,12 +43,16 @@ pipeline {
             }
         }
 
-        stage('Deploy Local Stack') {
+        stage('Deploy with Ansible') {
             steps {
-                sh '''
-                    docker compose -p dev_ops_web_oto -f docker-compose.prod.yml down --remove-orphans || true
-                    docker compose -p dev_ops_web_oto -f docker-compose.prod.yml up -d
-                '''
+                withCredentials([usernamePassword(credentialsId: "${DOCKERHUB_CREDENTIALS}", usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
+                    sh '''
+                        export DOCKERHUB_USER=${DOCKERHUB_USER}
+                        export IMAGE_TAG=${IMAGE_TAG}
+                        export DB_PASSWORD=${DB_PASSWORD}
+                        ansible-playbook -i ansible/inventory.ini ansible/deploy.yml
+                    '''
+                }
             }
         }
 
