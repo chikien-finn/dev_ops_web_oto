@@ -1,22 +1,18 @@
-# Stage 1: Build & Run Node.js API
 FROM node:20-alpine
 
-# Thiết lập thư mục làm việc
 WORKDIR /app
 
-# Cài đặt dependencies
+# Copy manifest trước để layer npm ci được cache khi code đổi mà dependencies không đổi
 COPY package*.json ./
 RUN npm ci --omit=dev
 
-# Copy toàn bộ mã nguồn
-COPY . .
+# --chown để user node đọc được code; node_modules vẫn của root (chỉ đọc, an toàn hơn)
+COPY --chown=node:node . .
 
-# Khai báo cổng 5000
-EXPOSE 5000
-
-# Biến môi trường mặc định
 ENV NODE_ENV=production
 ENV PORT=5000
+EXPOSE 5000
 
-# Khởi chạy server
+USER node
+
 CMD ["node", "server.js"]

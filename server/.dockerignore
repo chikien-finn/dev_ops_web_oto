@@ -4,3 +4,6 @@ npm-debug.log
 data/*.json
 !data/.gitkeep
 test/
+.env
+.env.*
+!.env.example
