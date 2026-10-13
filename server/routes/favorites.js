@@ -1,5 +1,5 @@
 import express from 'express';
-import { getPool, sql } from '../config/db.js';
+import { Favorite } from '../config/db.js';
 
 const router = express.Router();
 
@@ -13,38 +13,23 @@ router.post('/toggle', async (req, res) => {
     }
 
     const numericCarId = parseInt(carId, 10);
-    const db = await getPool();
-
-    // Kiểm tra xem đã thích chưa
-    const checkRes = await db.request()
-      .input('userId', sql.NVarChar, userId)
-      .input('carId', sql.Int, numericCarId)
-      .query('SELECT * FROM Favorites WHERE userId = @userId AND carId = @carId');
+    const existing = await Favorite.findOne({ userId, carId: numericCarId });
 
     let isFavorite = false;
 
-    if (checkRes.recordset.length > 0) {
+    if (existing) {
       // Đã có -> Xóa khỏi danh sách yêu thích
-      await db.request()
-        .input('userId', sql.NVarChar, userId)
-        .input('carId', sql.Int, numericCarId)
-        .query('DELETE FROM Favorites WHERE userId = @userId AND carId = @carId');
+      await Favorite.deleteOne({ _id: existing._id });
       isFavorite = false;
     } else {
       // Chưa có -> Thêm vào
-      await db.request()
-        .input('userId', sql.NVarChar, userId)
-        .input('carId', sql.Int, numericCarId)
-        .query('INSERT INTO Favorites (userId, carId) VALUES (@userId, @carId)');
+      await Favorite.create({ userId, carId: numericCarId });
       isFavorite = true;
     }
 
-    // Lấy toàn bộ danh sách favorites mới
-    const allFavRes = await db.request()
-      .input('userId', sql.NVarChar, userId)
-      .query('SELECT carId FROM Favorites WHERE userId = @userId');
-
-    const favorites = allFavRes.recordset.map(r => r.carId);
+    // Lấy toàn bộ danh sách favorites mới của user
+    const allFavDocs = await Favorite.find({ userId });
+    const favorites = allFavDocs.map(f => f.carId);
 
     return res.json({
       success: true,
@@ -53,7 +38,7 @@ router.post('/toggle', async (req, res) => {
       favorites
     });
   } catch (err) {
-    return res.status(500).json({ success: false, message: 'Lỗi toggle yêu thích trong SQL Server.', error: err.message });
+    return res.status(500).json({ success: false, message: 'Lỗi toggle yêu thích trong MongoDB.', error: err.message });
   }
 });
 
@@ -61,16 +46,11 @@ router.post('/toggle', async (req, res) => {
 router.get('/:userId', async (req, res) => {
   try {
     const { userId } = req.params;
-    const db = await getPool();
-
-    const result = await db.request()
-      .input('userId', sql.NVarChar, userId)
-      .query('SELECT carId FROM Favorites WHERE userId = @userId');
-
-    const favorites = result.recordset.map(r => r.carId);
+    const allFavDocs = await Favorite.find({ userId });
+    const favorites = allFavDocs.map(f => f.carId);
     return res.json({ success: true, favorites });
   } catch (err) {
-    return res.status(500).json({ success: false, message: 'Lỗi lấy danh sách yêu thích từ SQL Server.', error: err.message });
+    return res.status(500).json({ success: false, message: 'Lỗi lấy danh sách yêu thích từ MongoDB.', error: err.message });
   }
 });
 

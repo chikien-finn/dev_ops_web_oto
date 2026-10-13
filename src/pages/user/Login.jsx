@@ -17,12 +17,12 @@ export default function Login() {
   const navigate = useNavigate();
   const { login } = useAuth();
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
     setError('');
     setInfoMsg('');
 
-    const result = login(username, password);
+    const result = await login(username, password);
     if (result.success) {
       if (result.user?.role === 'admin') {
         navigate('/admin');

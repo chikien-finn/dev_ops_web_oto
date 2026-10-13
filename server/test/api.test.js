@@ -1,3 +1,4 @@
+process.env.NODE_ENV = 'test';
 import { test, describe, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import app from '../server.js';
@@ -10,7 +11,7 @@ let isDbConnected = false;
 before(async () => {
   isDbConnected = await initializeDatabase();
   if (!isDbConnected) {
-    console.warn('⚠️ SQL Server không thể kết nối trong môi trường CI. Các bài test phụ thuộc DB sẽ được bỏ qua an toàn.');
+    console.warn('⚠️ MongoDB không thể kết nối. Các bài test phụ thuộc DB sẽ được bỏ qua an toàn.');
   }
 
   // Start ephemeral server on random port for testing
@@ -50,7 +51,7 @@ describe('AutoPremium API Test Suite', () => {
 
   test('GET /api/cars should return list of cars', async (t) => {
     if (!isDbConnected) {
-      t.skip('SQL Server không kết nối được trong môi trường CI');
+      t.skip('MongoDB không kết nối được trong môi trường CI');
       return;
     }
     const res = await fetch(`${baseUrl}/api/cars`);
@@ -63,7 +64,7 @@ describe('AutoPremium API Test Suite', () => {
 
   test('GET /api/cars/:id should return single car details', async (t) => {
     if (!isDbConnected) {
-      t.skip('SQL Server không kết nối được trong môi trường CI');
+      t.skip('MongoDB không kết nối được trong môi trường CI');
       return;
     }
     const res = await fetch(`${baseUrl}/api/cars/1`);
@@ -76,7 +77,7 @@ describe('AutoPremium API Test Suite', () => {
 
   test('POST /api/auth/login with valid admin should succeed', async (t) => {
     if (!isDbConnected) {
-      t.skip('SQL Server không kết nối được trong môi trường CI');
+      t.skip('MongoDB không kết nối được trong môi trường CI');
       return;
     }
     const res = await fetch(`${baseUrl}/api/auth/login`, {
@@ -94,7 +95,7 @@ describe('AutoPremium API Test Suite', () => {
 
   test('POST /api/auth/login with invalid password should fail with 401', async (t) => {
     if (!isDbConnected) {
-      t.skip('SQL Server không kết nối được trong môi trường CI');
+      t.skip('MongoDB không kết nối được trong môi trường CI');
       return;
     }
     const res = await fetch(`${baseUrl}/api/auth/login`, {
@@ -109,7 +110,7 @@ describe('AutoPremium API Test Suite', () => {
 
   test('POST /api/bookings should register a test drive appointment', async (t) => {
     if (!isDbConnected) {
-      t.skip('SQL Server không kết nối được trong môi trường CI');
+      t.skip('MongoDB không kết nối được trong môi trường CI');
       return;
     }
     const newBooking = {
@@ -135,7 +136,7 @@ describe('AutoPremium API Test Suite', () => {
 
   test('GET /api/users should return registered users list', async (t) => {
     if (!isDbConnected) {
-      t.skip('SQL Server không kết nối được trong môi trường CI');
+      t.skip('MongoDB không kết nối được trong môi trường CI');
       return;
     }
     const res = await fetch(`${baseUrl}/api/users`);

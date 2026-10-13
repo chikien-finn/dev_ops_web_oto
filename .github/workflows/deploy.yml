@@ -70,6 +70,8 @@ jobs:
           file: ./Dockerfile
           push: true
           tags: |
+            ${{ secrets.DOCKER_USERNAME }}/oto-web:latest
+            ${{ secrets.DOCKER_USERNAME }}/oto-web:${{ github.sha }}
             ${{ secrets.DOCKER_USERNAME }}/web_ban_oto_frontend:latest
             ${{ secrets.DOCKER_USERNAME }}/web_ban_oto_frontend:${{ github.sha }}
           cache-from: type=gha
@@ -83,6 +85,8 @@ jobs:
           file: ./server/Dockerfile
           push: true
           tags: |
+            ${{ secrets.DOCKER_USERNAME }}/oto-api:latest
+            ${{ secrets.DOCKER_USERNAME }}/oto-api:${{ github.sha }}
             ${{ secrets.DOCKER_USERNAME }}/web_ban_oto_backend:latest
             ${{ secrets.DOCKER_USERNAME }}/web_ban_oto_backend:${{ github.sha }}
           cache-from: type=gha

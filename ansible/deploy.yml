@@ -31,7 +31,10 @@
       copy:
         dest: "{{ project_dir }}/.env"
         content: |
+          DB_USER=admin
           DB_PASSWORD={{ db_password }}
+          DOCKERHUB_USER={{ dockerhub_user }}
+          IMAGE_TAG={{ image_tag }}
         mode: '0600'
 
     - name: Pull the latest Docker images

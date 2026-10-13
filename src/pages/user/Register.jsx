@@ -18,7 +18,7 @@ export default function Register() {
   const navigate = useNavigate();
   const { register } = useAuth();
 
-  const handleRegister = (e) => {
+  const handleRegister = async (e) => {
     e.preventDefault();
     setError('');
     setSuccessMsg('');
@@ -58,7 +58,7 @@ export default function Register() {
 
     setIsLoading(true);
 
-    const result = register({
+    const result = await register({
       fullname: fullname.trim(),
       username: trimmedUsername,
       email: email.trim(),
