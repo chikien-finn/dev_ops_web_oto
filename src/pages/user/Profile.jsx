@@ -1,8 +1,9 @@
-import { User, Key, Heart, CheckCircle2, AlertCircle } from 'lucide-react';
+import { User, Key, Heart, Calendar, MapPin, Clock, CheckCircle2, AlertCircle, Ban } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useCars } from '../../context/CarContext';
+import { useToast } from '../../context/ToastContext';
 import { useNavigate } from 'react-router-dom';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import CarCard from '../../components/user/CarCard';
 import api from '../../services/api';
 import '../../styles/user/Profile.css';
@@ -10,8 +11,9 @@ import '../../styles/user/Profile.css';
 export default function Profile() {
   const { user, updateProfile } = useAuth();
   const { cars } = useCars();
+  const { showToast } = useToast();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState('profile'); // 'profile', 'favorites', 'password'
+  const [activeTab, setActiveTab] = useState('profile'); // 'profile', 'bookings', 'favorites', 'password'
 
   // Profile form state
   const [profileForm, setProfileForm] = useState({
@@ -29,6 +31,25 @@ export default function Profile() {
   });
   const [passwordMsg, setPasswordMsg] = useState(null);
 
+  // Bookings state
+  const [myBookings, setMyBookings] = useState([]);
+  const [isLoadingBookings, setIsLoadingBookings] = useState(false);
+
+  const fetchBookings = useCallback(async () => {
+    if (!user) return;
+    setIsLoadingBookings(true);
+    try {
+      const res = await api.getBookings({ userId: user.id, phone: user.phone });
+      if (res.success && Array.isArray(res.data)) {
+        setMyBookings(res.data);
+      }
+    } catch (err) {
+      console.warn('Lỗi tải lịch hẹn của user:', err);
+    } finally {
+      setIsLoadingBookings(false);
+    }
+  }, [user]);
+
   useEffect(() => {
     if (!user) {
       navigate('/login');
@@ -38,8 +59,9 @@ export default function Profile() {
         phone: user.phone || '',
         address: user.address || ''
       });
+      fetchBookings();
     }
-  }, [user, navigate]);
+  }, [user, navigate, fetchBookings]);
 
   if (!user) return null;
 
@@ -51,8 +73,10 @@ export default function Profile() {
     const res = await updateProfile(profileForm);
     if (res.success) {
       setProfileMsg({ type: 'success', text: 'Cập nhật thông tin thành công!' });
+      showToast('success', 'Đã lưu thay đổi hồ sơ cá nhân!');
     } else {
       setProfileMsg({ type: 'error', text: res.message || 'Cập nhật thất bại.' });
+      showToast('error', res.message || 'Cập nhật thất bại.');
     }
   };
 
@@ -74,8 +98,35 @@ export default function Profile() {
     if (res.success) {
       setPasswordMsg({ type: 'success', text: 'Đổi mật khẩu thành công!' });
       setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
+      showToast('success', 'Đã đổi mật khẩu thành công!');
     } else {
       setPasswordMsg({ type: 'error', text: res.message || 'Đổi mật khẩu thất bại.' });
+      showToast('error', res.message || 'Đổi mật khẩu thất bại.');
+    }
+  };
+
+  const handleCancelBooking = async (bookingId) => {
+    if (!window.confirm('Bạn có chắc chắn muốn hủy yêu cầu đặt lịch hẹn này không?')) return;
+    try {
+      const res = await api.updateBookingStatus(bookingId, 'cancelled');
+      if (res.success) {
+        setMyBookings(prev => prev.map(b => b.id === bookingId ? { ...b, status: 'cancelled' } : b));
+        showToast('info', 'Đã hủy lịch hẹn lái thử.');
+      } else {
+        showToast('error', res.message || 'Không thể hủy lịch hẹn.');
+      }
+    } catch {
+      showToast('error', 'Lỗi khi hủy lịch hẹn.');
+    }
+  };
+
+  const getStatusText = (status) => {
+    switch (status) {
+      case 'pending': return 'Chờ nhân viên liên hệ';
+      case 'contacted': return 'Đã liên hệ xác nhận';
+      case 'completed': return 'Đã hoàn tất lái thử';
+      case 'cancelled': return 'Đã hủy';
+      default: return status;
     }
   };
 
@@ -96,6 +147,14 @@ export default function Profile() {
                 onClick={() => { setActiveTab('profile'); setProfileMsg(null); }}
               >
                 <User size={18} /> Thông tin cá nhân
+              </button>
+            </li>
+            <li>
+              <button 
+                className={activeTab === 'bookings' ? 'active' : ''} 
+                onClick={() => { setActiveTab('bookings'); fetchBookings(); }}
+              >
+                <Calendar size={18} /> Lịch hẹn lái thử ({myBookings.length})
               </button>
             </li>
             <li>
@@ -179,6 +238,66 @@ export default function Profile() {
                   Lưu thay đổi thông tin
                 </button>
               </form>
+            </>
+          )}
+
+          {activeTab === 'bookings' && (
+            <>
+              <h3>Lịch Hẹn Lái Thử Của Tôi</h3>
+              {isLoadingBookings ? (
+                <p style={{ color: 'var(--text-secondary)' }}>Đang tải danh sách lịch hẹn...</p>
+              ) : myBookings.length > 0 ? (
+                <div className="booking-list">
+                  {myBookings.map((b) => (
+                    <div key={b.id} className="booking-card-item">
+                      <div className="booking-info-main">
+                        <h4>{b.carName}</h4>
+                        <div className="booking-meta">
+                          <span className="booking-meta-item">
+                            <Clock size={15} /> Ngày hẹn: <strong>{b.date || 'Linh hoạt'}</strong>
+                          </span>
+                          <span className="booking-meta-item">
+                            <MapPin size={15} /> Địa điểm: {b.location === 'home' ? 'Lái thử tận nơi' : 'Showroom AutoPremium'}
+                          </span>
+                          {b.note && (
+                            <span className="booking-meta-item" style={{ fontStyle: 'italic', opacity: 0.85 }}>
+                              "{b.note}"
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="booking-actions-side">
+                        <span className={`booking-status-badge ${b.status}`}>
+                          {getStatusText(b.status)}
+                        </span>
+                        {b.status === 'pending' && (
+                          <button 
+                            className="btn-cancel-booking"
+                            onClick={() => handleCancelBooking(b.id)}
+                            title="Hủy lịch hẹn này"
+                          >
+                            <Ban size={14} style={{ verticalAlign: 'middle', marginRight: '4px' }} />
+                            Hủy
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-secondary)' }}>
+                  <Calendar size={48} style={{ opacity: 0.3, marginBottom: '16px' }} />
+                  <p>Bạn chưa có lịch hẹn lái thử nào.</p>
+                  <button 
+                    onClick={() => navigate('/cars')} 
+                    className="btn btn-primary" 
+                    style={{ marginTop: '16px' }}
+                  >
+                    Khám phá xe & Đặt lịch ngay
+                  </button>
+                </div>
+              )}
             </>
           )}
 

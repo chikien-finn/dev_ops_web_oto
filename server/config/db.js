@@ -62,6 +62,7 @@ export const User = mongoose.models.User || mongoose.model('User', userSchema);
 // Booking Model
 const bookingSchema = new mongoose.Schema({
   id: { type: String, required: true, unique: true },
+  userId: { type: String, default: null },
   carId: { type: Number, default: null },
   carName: { type: String, default: 'Xe tư vấn chung' },
   name: { type: String, required: true, trim: true },

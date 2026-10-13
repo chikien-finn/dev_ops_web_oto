@@ -3,10 +3,17 @@ import { Booking } from '../config/db.js';
 
 const router = express.Router();
 
-// GET /api/bookings (Admin)
+// GET /api/bookings (Admin list all, or User filter by userId / phone)
 router.get('/', async (req, res) => {
   try {
-    const bookings = await Booking.find().sort({ createdAt: -1 });
+    const { userId, phone } = req.query;
+    const filter = {};
+    if (userId) {
+      filter.$or = [{ userId }, { phone: phone ? phone.trim() : '__none__' }];
+    } else if (phone) {
+      filter.phone = phone.trim();
+    }
+    const bookings = await Booking.find(filter).sort({ createdAt: -1 });
     return res.json({ success: true, count: bookings.length, data: bookings });
   } catch (err) {
     return res.status(500).json({ success: false, message: 'Lỗi tải danh sách lịch hẹn từ MongoDB.', error: err.message });
@@ -16,7 +23,7 @@ router.get('/', async (req, res) => {
 // POST /api/bookings (User submit)
 router.post('/', async (req, res) => {
   try {
-    const { carId, carName, name, phone, date, location, note } = req.body;
+    const { carId, carName, name, phone, date, location, note, userId } = req.body;
 
     if (!name || !phone) {
       return res.status(400).json({ success: false, message: 'Họ tên và số điện thoại là bắt buộc.' });
@@ -28,6 +35,7 @@ router.post('/', async (req, res) => {
 
     const newBooking = await Booking.create({
       id: bookingId,
+      userId: userId || null,
       carId: carId ? Number(carId) : null,
       carName: carName || 'Xe tư vấn chung',
       name: name.trim(),

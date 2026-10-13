@@ -98,7 +98,13 @@ export const api = {
   }),
 
   // Bookings (Lái thử & Tư vấn)
-  getBookings: () => request('/bookings'),
+  getBookings: (params = {}) => {
+    const query = new URLSearchParams();
+    if (params.userId) query.append('userId', params.userId);
+    if (params.phone) query.append('phone', params.phone);
+    const qs = query.toString();
+    return request(`/bookings${qs ? `?${qs}` : ''}`);
+  },
   createBooking: (bookingData) => request('/bookings', {
     method: 'POST',
     body: JSON.stringify(bookingData)

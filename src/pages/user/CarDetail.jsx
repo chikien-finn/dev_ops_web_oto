@@ -7,7 +7,9 @@ import {
 } from 'lucide-react';
 import { useCars } from '../../context/CarContext';
 import { useAuth } from '../../context/AuthContext';
+import { useToast } from '../../context/ToastContext';
 import { FALLBACK_CAR_IMAGE } from '../../data/cars';
+import { formatVndPrice, formatVndInstallment } from '../../utils/format';
 import CarCard from '../../components/user/CarCard';
 import api from '../../services/api';
 import '../../styles/user/CarDetail.css';
@@ -103,6 +105,7 @@ export default function CarDetail() {
   const { id } = useParams();
   const { cars } = useCars();
   const { user, toggleFavorite } = useAuth();
+  const { showToast } = useToast();
   
   const [bookingSent, setBookingSent] = useState(false);
   const [bookingForm, setBookingForm] = useState({
@@ -148,14 +151,18 @@ export default function CarDetail() {
   const handleFavoriteClick = () => {
     if (user) {
       toggleFavorite(car.id);
+      showToast(
+        isFavorite ? 'info' : 'success',
+        isFavorite ? `Đã bỏ "${car.name}" khỏi mục yêu thích.` : `Đã lưu "${car.name}" vào mục yêu thích! ❤️`
+      );
     } else {
-      alert('Vui lòng đăng nhập để lưu vào danh sách xe yêu thích!');
+      showToast('info', 'Vui lòng đăng nhập để lưu xe vào danh sách yêu thích!');
     }
   };
 
   const handleShare = () => {
     navigator.clipboard.writeText(window.location.href);
-    alert('Đã sao chép liên kết chi tiết xe vào bộ nhớ tạm!');
+    showToast('success', 'Đã sao chép liên kết chi tiết xe vào bộ nhớ tạm! 📋');
   };
 
   const handleBookingSubmit = async (e) => {
@@ -164,10 +171,13 @@ export default function CarDetail() {
       await api.createBooking({
         carId: car.id,
         carName: car.name,
+        userId: user?.id || null,
         ...bookingForm
       });
+      showToast('success', 'Đã gửi yêu cầu đặt lịch hẹn lái thử thành công! 🚗');
     } catch (err) {
       console.warn('Lỗi khi gửi yêu cầu lái thử lên server:', err);
+      showToast('error', 'Có lỗi khi gửi yêu cầu, vui lòng thử lại sau.');
     }
     setBookingSent(true);
   };
@@ -250,12 +260,13 @@ export default function CarDetail() {
               
               <div className="car-detail-price-box">
                 <span className="price-label">Giá niêm yết chính hãng</span>
-                <div className="price-amount-row">
+                <div className="price-amount-row" style={{ alignItems: 'baseline', gap: '10px' }}>
                   <span className="price-value">${Number(car.price).toLocaleString()}</span>
-                  <span className="price-subtext">Đã bao gồm thuế GTGT</span>
+                  <span className="price-subtext" style={{ color: '#10b981', fontWeight: 600 }}>({formatVndPrice(car.price)})</span>
+                  <span className="price-subtext">• Đã bao gồm thuế GTGT</span>
                 </div>
                 <div className="price-estimate">
-                  Dự toán trả góp chỉ từ <strong>${Math.round(car.price * 0.015).toLocaleString()}/tháng</strong> (Hỗ trợ vay 80%)
+                  Dự toán trả góp chỉ từ <strong>${Math.round(car.price * 0.015).toLocaleString()}/tháng</strong> ({formatVndInstallment(car.price * 0.015)} • Hỗ trợ vay 80%)
                 </div>
               </div>
             </div>

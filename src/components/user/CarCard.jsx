@@ -1,11 +1,14 @@
 import { Link } from 'react-router-dom';
 import { Settings, Fuel, Calendar, Heart, ArrowRight } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { useToast } from '../../context/ToastContext';
 import { FALLBACK_CAR_IMAGE } from '../../data/cars';
+import { formatVndPrice } from '../../utils/format';
 import '../../styles/user/CarCard.css';
 
 export default function CarCard({ id, name, price, image, year, type, fuel }) {
   const { user, toggleFavorite } = useAuth();
+  const { showToast } = useToast();
   
   const isFavorite = user?.favorites?.includes(id);
 
@@ -13,8 +16,12 @@ export default function CarCard({ id, name, price, image, year, type, fuel }) {
     e.preventDefault();
     if (user) {
       toggleFavorite(id);
+      showToast(
+        isFavorite ? 'info' : 'success', 
+        isFavorite ? `Đã bỏ "${name}" khỏi mục yêu thích.` : `Đã lưu "${name}" vào mục yêu thích! ❤️`
+      );
     } else {
-      alert('Vui lòng đăng nhập để thêm vào mục yêu thích');
+      showToast('info', 'Vui lòng đăng nhập để lưu xe vào mục yêu thích!');
     }
   };
 
@@ -48,7 +55,10 @@ export default function CarCard({ id, name, price, image, year, type, fuel }) {
         <h3 className="car-name">{name}</h3>
         <div className="car-price-row">
           <span className="car-price-label">Giá niêm yết</span>
-          <span className="car-price">${Number(price).toLocaleString()}</span>
+          <div style={{ textAlign: 'right' }}>
+            <div className="car-price">${Number(price).toLocaleString()}</div>
+            <div style={{ fontSize: '0.8rem', color: '#10b981', fontWeight: 600 }}>{formatVndPrice(price)}</div>
+          </div>
         </div>
 
         <div className="car-specs">

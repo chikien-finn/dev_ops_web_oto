@@ -2,68 +2,158 @@ import { useState, useMemo } from 'react';
 import CarCard from '../../components/user/CarCard';
 import { useCars } from '../../context/CarContext';
 import { useAuth } from '../../context/AuthContext';
-import { Search, Filter, Heart } from 'lucide-react';
+import { useToast } from '../../context/ToastContext';
+import { Search, Filter, Heart, ArrowUpDown, Tag, DollarSign } from 'lucide-react';
 import '../../styles/user/Cars.css';
+
+function getCarBrand(name) {
+  if (!name) return 'Khác';
+  if (name.startsWith('Mercedes')) return 'Mercedes-Benz';
+  if (name.startsWith('Aston')) return 'Aston Martin';
+  if (name.startsWith('Range')) return 'Range Rover';
+  if (name.startsWith('Porsche')) return 'Porsche';
+  if (name.startsWith('Audi')) return 'Audi';
+  if (name.startsWith('BMW')) return 'BMW';
+  return name.split(' ')[0];
+}
 
 export default function Cars() {
   const { cars } = useCars();
   const { user } = useAuth();
+  const { showToast } = useToast();
+
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('All');
+  const [filterBrand, setFilterBrand] = useState('All');
+  const [filterPrice, setFilterPrice] = useState('All');
+  const [sortBy, setSortBy] = useState('default');
   const [onlyFavorites, setOnlyFavorites] = useState(false);
 
   const favCount = user?.favorites?.length || 0;
 
+  // Extract unique brands and types
+  const uniqueBrands = ['All', ...new Set(cars.map(c => getCarBrand(c.name)))];
+  const uniqueTypes = ['All', ...new Set(cars.map(car => car.type))];
+
   const filteredCars = useMemo(() => {
-    return cars.filter(car => {
+    let result = cars.filter(car => {
       const matchesSearch = car.name.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesType = filterType === 'All' || car.type === filterType;
-      const matchesFav = !onlyFavorites || (user?.favorites && user.favorites.includes(car.id));
-      return matchesSearch && matchesType && matchesFav;
-    });
-  }, [cars, searchTerm, filterType, onlyFavorites, user]);
+      const matchesBrand = filterBrand === 'All' || getCarBrand(car.name) === filterBrand;
+      
+      let matchesPrice = true;
+      const p = Number(car.price);
+      if (filterPrice === 'under_150k') matchesPrice = p < 150000;
+      else if (filterPrice === '150k_200k') matchesPrice = p >= 150000 && p <= 200000;
+      else if (filterPrice === 'above_200k') matchesPrice = p > 200000;
 
-  const uniqueTypes = ['All', ...new Set(cars.map(car => car.type))];
+      const matchesFav = !onlyFavorites || (user?.favorites && user.favorites.includes(car.id));
+
+      return matchesSearch && matchesType && matchesBrand && matchesPrice && matchesFav;
+    });
+
+    // Sort
+    if (sortBy === 'price_asc') {
+      result.sort((a, b) => Number(a.price) - Number(b.price));
+    } else if (sortBy === 'price_desc') {
+      result.sort((a, b) => Number(b.price) - Number(a.price));
+    } else if (sortBy === 'year_desc') {
+      result.sort((a, b) => Number(b.year) - Number(a.year));
+    }
+
+    return result;
+  }, [cars, searchTerm, filterType, filterBrand, filterPrice, sortBy, onlyFavorites, user]);
 
   return (
     <div className="container cars-page-container">
       <div className="cars-header">
         <h1 className="section-title">Danh Sách Xe</h1>
         <p className="cars-header-desc">
-          Khám phá bộ sưu tập xe sang trọng và đẳng cấp của chúng tôi.
+          Khám phá bộ sưu tập xe sang trọng và đẳng cấp của chúng tôi ({filteredCars.length} mẫu xe).
         </p>
       </div>
 
-      {/* Search and Filter Section */}
+      {/* Search and Multi-Filter Section */}
       <div className="cars-filter-bar">
+        {/* Search */}
         <div className="cars-search-box">
           <Search size={20} className="cars-search-icon" />
           <input
             type="text"
-            placeholder="Tìm kiếm xe..."
+            placeholder="Tìm theo tên xe hoặc từ khóa..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="cars-search-input"
           />
         </div>
 
+        {/* Filter by Brand */}
         <div className="cars-select-wrapper">
-          <Filter size={20} className="cars-select-icon" />
+          <Tag size={18} className="cars-select-icon" />
           <select
-            value={filterType}
-            onChange={(e) => setFilterType(e.target.value)}
+            value={filterBrand}
+            onChange={(e) => setFilterBrand(e.target.value)}
             className="cars-select"
+            title="Lọc theo thương hiệu"
           >
-            {uniqueTypes.map(type => (
-              <option key={type} value={type}>{type === 'All' ? 'Tất cả các loại' : type}</option>
+            {uniqueBrands.map(brand => (
+              <option key={brand} value={brand}>{brand === 'All' ? 'Tất cả hãng xe' : brand}</option>
             ))}
           </select>
         </div>
 
+        {/* Filter by Body Type */}
+        <div className="cars-select-wrapper">
+          <Filter size={18} className="cars-select-icon" />
+          <select
+            value={filterType}
+            onChange={(e) => setFilterType(e.target.value)}
+            className="cars-select"
+            title="Lọc theo kiểu dáng"
+          >
+            {uniqueTypes.map(type => (
+              <option key={type} value={type}>{type === 'All' ? 'Tất cả kiểu dáng' : type}</option>
+            ))}
+          </select>
+        </div>
+
+        {/* Filter by Price Range */}
+        <div className="cars-select-wrapper">
+          <DollarSign size={18} className="cars-select-icon" />
+          <select
+            value={filterPrice}
+            onChange={(e) => setFilterPrice(e.target.value)}
+            className="cars-select"
+            title="Lọc theo mức giá"
+          >
+            <option value="All">Mọi mức giá</option>
+            <option value="under_150k">Dưới $150,000 (&lt; 3.8 tỷ VNĐ)</option>
+            <option value="150k_200k">$150,000 - $200,000 (3.8 - 5 tỷ VNĐ)</option>
+            <option value="above_200k">Trên $200,000 (&gt; 5 tỷ VNĐ)</option>
+          </select>
+        </div>
+
+        {/* Sort by */}
+        <div className="cars-select-wrapper">
+          <ArrowUpDown size={18} className="cars-select-icon" />
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value)}
+            className="cars-select"
+            title="Sắp xếp danh sách xe"
+          >
+            <option value="default">Sắp xếp: Mặc định</option>
+            <option value="price_asc">Giá: Thấp đến Cao</option>
+            <option value="price_desc">Giá: Cao đến Thấp</option>
+            <option value="year_desc">Năm sản xuất: Mới nhất</option>
+          </select>
+        </div>
+
+        {/* Favorite toggle button */}
         <button 
           onClick={() => {
             if (!user && !onlyFavorites) {
-              alert('Vui lòng đăng nhập để xem danh sách xe bạn đã yêu thích!');
+              showToast('info', 'Vui lòng đăng nhập để lọc các xe bạn đã bấm tim yêu thích!');
               return;
             }
             setOnlyFavorites(!onlyFavorites);
@@ -83,7 +173,7 @@ export default function Cars() {
           ))
         ) : (
           <div className="cars-empty">
-            <p>Không tìm thấy mẫu xe nào phù hợp với tìm kiếm của bạn.</p>
+            <p>Không tìm thấy mẫu xe nào phù hợp với bộ lọc tìm kiếm của bạn.</p>
           </div>
         )}
       </div>
