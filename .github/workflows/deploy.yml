@@ -69,8 +69,8 @@ jobs:
           file: ./Dockerfile
           push: true
           tags: |
-            ${{ secrets.DOCKER_USERNAME }}/oto-web:latest
-            ${{ secrets.DOCKER_USERNAME }}/oto-web:${{ github.sha }}
+            ${{ secrets.DOCKER_USERNAME }}/web_ban_oto_frontend:latest
+            ${{ secrets.DOCKER_USERNAME }}/web_ban_oto_frontend:${{ github.sha }}
 
       - name: Build & Push Backend Image
         uses: docker/build-push-action@v5
@@ -79,8 +79,8 @@ jobs:
           file: ./server/Dockerfile
           push: true
           tags: |
-            ${{ secrets.DOCKER_USERNAME }}/oto-api:latest
-            ${{ secrets.DOCKER_USERNAME }}/oto-api:${{ github.sha }}
+            ${{ secrets.DOCKER_USERNAME }}/web_ban_oto_backend:latest
+            ${{ secrets.DOCKER_USERNAME }}/web_ban_oto_backend:${{ github.sha }}
 
   # ==========================================
   # GIAI ĐOẠN 3: TỰ ĐỘNG TRIỂN KHAI LÊN AWS EC2 (CD)
