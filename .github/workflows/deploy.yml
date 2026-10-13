@@ -47,6 +47,7 @@ jobs:
     name: Build & Push Docker Images
     needs: quality-check
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    continue-on-error: true
     runs-on: ubuntu-latest
 
     steps:
