@@ -41,12 +41,12 @@ jobs:
         run: npm run build
 
   # ==========================================
-  # GIAI ĐOẠN 2: BUILD VÀ PUSH DOCKER IMAGES (TÙY CHỌN DOCKER HUB)
+  # GIAI ĐOẠN 2: BUILD VÀ PUSH DOCKER IMAGES
   # ==========================================
   build-and-push:
     name: Build & Push Docker Images
     needs: quality-check
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push' && secrets.DOCKER_USERNAME != ''
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
 
     steps:
