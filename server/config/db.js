@@ -2,6 +2,7 @@ import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import bcrypt from 'bcryptjs';
 import { INITIAL_CARS, INITIAL_USERS, INITIAL_BOOKINGS } from '../storage/db.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -15,6 +16,7 @@ const schemaOptions = {
     transform: (_doc, ret) => {
       delete ret._id;
       delete ret.__v;
+      delete ret.password;
       return ret;
     }
   },
@@ -22,6 +24,7 @@ const schemaOptions = {
     transform: (_doc, ret) => {
       delete ret._id;
       delete ret.__v;
+      delete ret.password;
       return ret;
     }
   }
@@ -164,14 +167,33 @@ export async function initializeDatabase() {
     if (carsCount === 0) {
       console.log('🌱 Nạp dữ liệu xe mẫu (INITIAL_CARS) vào MongoDB...');
       await Car.insertMany(INITIAL_CARS);
+    } else if (carsCount < INITIAL_CARS.length) {
+      console.log(`🌱 Cập nhật bổ sung xe mẫu mới vào MongoDB (${carsCount} -> ${INITIAL_CARS.length} xe)...`);
+      for (const car of INITIAL_CARS) {
+        await Car.updateOne({ id: car.id }, { $set: car }, { upsert: true });
+      }
     }
 
     // 2. Seed Users
     const usersCount = await User.countDocuments();
     if (usersCount === 0) {
       console.log('🌱 Nạp tài khoản mẫu (admin & user123) vào MongoDB...');
-      const usersToInsert = INITIAL_USERS.map(({ favorites: _f, ...u }) => u);
+      const usersToInsert = await Promise.all(
+        INITIAL_USERS.map(async ({ favorites: _f, ...u }) => ({
+          ...u,
+          password: await bcrypt.hash(u.password, 10)
+        }))
+      );
       await User.insertMany(usersToInsert);
+    } else {
+      // Đảm bảo các tài khoản mẫu cũ (nếu lưu plain text) được cập nhật sang bcrypt hash
+      const existingUsers = await User.find();
+      for (const u of existingUsers) {
+        if (u.password && !u.password.startsWith('$2')) {
+          const hashedPassword = await bcrypt.hash(u.password, 10);
+          await User.updateOne({ _id: u._id }, { $set: { password: hashedPassword } });
+        }
+      }
     }
 
     // 3. Seed Bookings

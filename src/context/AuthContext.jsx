@@ -7,7 +7,6 @@ const DEFAULT_USERS = [
   {
     id: 'user_admin_1',
     username: 'admin',
-    password: 'admin123',
     name: 'Quản Trị Viên',
     email: 'admin@autopremium.com',
     phone: '0999 888 777',
@@ -18,7 +17,6 @@ const DEFAULT_USERS = [
   {
     id: 'user_default_1',
     username: 'user123',
-    password: '123456',
     name: 'Nguyễn Văn A',
     email: 'user123@gmail.com',
     phone: '0123 456 789',
@@ -96,7 +94,6 @@ export function AuthProvider({ children }) {
       username: userData.username.trim(),
       name: userData.fullname?.trim() || userData.username.trim(),
       email: userData.email.trim(),
-      password: userData.password,
       phone: userData.phone?.trim() || '',
       address: userData.address?.trim() || 'Hà Nội, Việt Nam',
       role: userData.role || (cleanUsername === 'admin' ? 'admin' : 'user'),
@@ -112,56 +109,36 @@ export function AuthProvider({ children }) {
   const login = async (usernameOrData, password) => {
     // Direct user object bypass
     if (typeof usernameOrData === 'object' && usernameOrData !== null) {
+      const { password: _p, ...cleanUser } = usernameOrData;
       const userToSave = { 
-        ...usernameOrData, 
-        role: usernameOrData.role || (usernameOrData.username === 'admin' ? 'admin' : 'user'),
-        favorites: usernameOrData.favorites || [] 
+        ...cleanUser, 
+        role: cleanUser.role || (cleanUser.username === 'admin' ? 'admin' : 'user'),
+        favorites: cleanUser.favorites || [] 
       };
       setUser(userToSave);
       localStorage.setItem('user', JSON.stringify(userToSave));
       return { success: true, user: userToSave };
     }
 
-    // 1. Try Backend API
+    // Backend API login
     try {
       const res = await api.login(usernameOrData, password);
       if (res.success && res.user) {
-        setUser(res.user);
-        localStorage.setItem('user', JSON.stringify(res.user));
-        return { success: true, user: res.user };
+        const { password: _p, ...cleanUser } = res.user;
+        setUser(cleanUser);
+        localStorage.setItem('user', JSON.stringify(cleanUser));
+        return { success: true, user: cleanUser };
       }
-      if (res.message && !res.isNetworkError) {
-        return { success: false, message: res.message };
-      }
+      return { 
+        success: false, 
+        message: res.message || 'Tên đăng nhập/email hoặc mật khẩu không chính xác.' 
+      };
     } catch {
-      // Fallback
+      return { 
+        success: false, 
+        message: 'Không thể kết nối đến máy chủ xác thực.' 
+      };
     }
-
-    // 2. Offline fallback
-    const identifier = usernameOrData?.trim().toLowerCase();
-    const matchedUser = usersList.find(u => 
-      (u.username?.toLowerCase() === identifier || u.email?.toLowerCase() === identifier) &&
-      u.password === password
-    );
-
-    if (!matchedUser) {
-      return { success: false, message: 'Tên đăng nhập/email hoặc mật khẩu không chính xác.' };
-    }
-
-    const userToSave = {
-      id: matchedUser.id,
-      username: matchedUser.username,
-      name: matchedUser.name,
-      email: matchedUser.email,
-      phone: matchedUser.phone,
-      address: matchedUser.address,
-      role: matchedUser.role || (matchedUser.username === 'admin' ? 'admin' : 'user'),
-      favorites: matchedUser.favorites || []
-    };
-
-    setUser(userToSave);
-    localStorage.setItem('user', JSON.stringify(userToSave));
-    return { success: true, user: userToSave };
   };
 
   const logout = () => {

@@ -6,7 +6,17 @@ import { FALLBACK_CAR_IMAGE } from '../../data/cars';
 import { formatVndPrice } from '../../utils/format';
 import '../../styles/user/CarCard.css';
 
-export default function CarCard({ id, name, price, image, year, type, fuel }) {
+export default function CarCard({ 
+  id, 
+  name, 
+  price, 
+  image, 
+  year, 
+  type, 
+  fuel,
+  onTestDrive,
+  car
+}) {
   const { user, toggleFavorite } = useAuth();
   const { showToast } = useToast();
   
@@ -14,6 +24,7 @@ export default function CarCard({ id, name, price, image, year, type, fuel }) {
 
   const handleFavoriteClick = (e) => {
     e.preventDefault();
+    e.stopPropagation();
     if (user) {
       toggleFavorite(id);
       showToast(
@@ -25,6 +36,8 @@ export default function CarCard({ id, name, price, image, year, type, fuel }) {
     }
   };
 
+  const carData = car || { id, name, price, image, year, type, fuel };
+
   return (
     <div className="car-card glass-card">
       <div className="car-card-top-badges">
@@ -33,26 +46,32 @@ export default function CarCard({ id, name, price, image, year, type, fuel }) {
           onClick={handleFavoriteClick}
           className={`car-favorite-btn ${isFavorite ? 'active' : ''}`}
           title={isFavorite ? 'Bỏ yêu thích' : 'Thêm vào yêu thích'}
+          type="button"
         >
-          <Heart size={18} fill={isFavorite ? '#ef4444' : 'none'} />
+          <Heart size={18} fill={isFavorite ? '#ef4444' : 'none'} color={isFavorite ? '#ef4444' : '#ffffff'} />
         </button>
       </div>
 
       <div className="car-image-container">
-        <img 
-          src={image} 
-          alt={name} 
-          className="car-image"
-          onError={(e) => {
-            e.currentTarget.onerror = null;
-            e.currentTarget.src = FALLBACK_CAR_IMAGE;
-          }}
-        />
+        <Link to={`/car/${id}`}>
+          <img 
+            src={image || FALLBACK_CAR_IMAGE} 
+            alt={name} 
+            className="car-image"
+            loading="lazy"
+            onError={(e) => {
+              e.currentTarget.onerror = null;
+              e.currentTarget.src = FALLBACK_CAR_IMAGE;
+            }}
+          />
+        </Link>
         <div className="car-image-gradient"></div>
       </div>
 
       <div className="car-info">
-        <h3 className="car-name">{name}</h3>
+        <Link to={`/car/${id}`}>
+          <h3 className="car-name">{name}</h3>
+        </Link>
         <div className="car-price-row">
           <span className="car-price-label">Giá niêm yết</span>
           <div style={{ textAlign: 'right' }}>
@@ -73,9 +92,45 @@ export default function CarCard({ id, name, price, image, year, type, fuel }) {
           </div>
         </div>
 
-        <Link to={`/car/${id}`} className="btn btn-primary btn-full car-detail-btn">
-          Xem Chi Tiết <ArrowRight size={16} />
-        </Link>
+        {onTestDrive ? (
+          <div className="car-card-dual-actions">
+            <Link to={`/car/${id}`} className="btn btn-outline">
+              <span>Chi Tiết</span>
+              <ArrowRight size={15} />
+            </Link>
+            <button 
+              type="button" 
+              onClick={() => onTestDrive(carData)} 
+              className="btn btn-primary"
+              title="Đăng ký lịch lái thử mẫu xe này"
+            >
+              <Calendar size={15} />
+              <span>Lái Thử</span>
+            </button>
+          </div>
+        ) : (
+          <Link to={`/car/${id}`} className="btn btn-primary btn-full car-detail-btn">
+            Xem Chi Tiết <ArrowRight size={16} />
+          </Link>
+        )}
+      </div>
+    </div>
+  );
+}
+
+export function CarCardSkeleton() {
+  return (
+    <div className="car-card glass-card car-skeleton-card">
+      <div className="car-skeleton-img"></div>
+      <div className="car-skeleton-body">
+        <div className="car-skeleton-line" style={{ width: '70%', height: '22px' }}></div>
+        <div className="car-skeleton-line" style={{ width: '45%', height: '18px' }}></div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', margin: '6px 0' }}>
+          <div className="car-skeleton-line" style={{ height: '16px' }}></div>
+          <div className="car-skeleton-line" style={{ height: '16px' }}></div>
+          <div className="car-skeleton-line" style={{ height: '16px' }}></div>
+        </div>
+        <div className="car-skeleton-line" style={{ width: '100%', height: '42px', marginTop: 'auto' }}></div>
       </div>
     </div>
   );

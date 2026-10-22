@@ -10,13 +10,14 @@ export function CarProvider({ children }) {
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) {
+        if (Array.isArray(parsed) && parsed.length >= initialCars.length) {
           return parsed;
         }
       } catch {
         // Fallback
       }
     }
+    localStorage.setItem('autopremium_cars', JSON.stringify(initialCars));
     return initialCars;
   });
 

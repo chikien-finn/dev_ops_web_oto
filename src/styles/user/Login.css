@@ -118,3 +118,52 @@
 .auth-alert-icon {
   flex-shrink: 0;
 }
+
+.login-quick-section {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px dashed rgba(255, 255, 255, 0.12);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.login-quick-hint {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+.login-quick-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.btn-quick-tag {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #c5c6c7;
+  transition: all 0.2s ease;
+}
+
+.btn-quick-tag.admin:hover {
+  background: rgba(69, 162, 158, 0.15);
+  border-color: #66fcf1;
+  color: #66fcf1;
+}
+
+.btn-quick-tag.user:hover {
+  background: rgba(59, 130, 246, 0.15);
+  border-color: #60a5fa;
+  color: #93c5fd;
+}

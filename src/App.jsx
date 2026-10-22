@@ -9,6 +9,7 @@ import Register from './pages/user/Register';
 import Profile from './pages/user/Profile';
 import Favorites from './pages/user/Favorites';
 import Admin from './pages/admin/Admin';
+import NotFound from './pages/user/NotFound';
 
 function AppContent() {
   const location = useLocation();
@@ -27,6 +28,7 @@ function AppContent() {
           <Route path="/register" element={<Register />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/admin" element={<Admin />} />
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </main>
       {!isAdmin && <Footer />}

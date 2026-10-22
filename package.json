@@ -4,6 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
+    "start": "npm run dev:all",
     "dev": "vite",
     "dev:server": "node --watch server/server.js",
     "dev:all": "concurrently -n \"WEB,API\" -c \"cyan,magenta\" \"vite\" \"node --watch server/server.js\"",

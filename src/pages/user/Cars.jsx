@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import CarCard from '../../components/user/CarCard';
+import CarCard, { CarCardSkeleton } from '../../components/user/CarCard';
 import { useCars } from '../../context/CarContext';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
@@ -18,7 +18,7 @@ function getCarBrand(name) {
 }
 
 export default function Cars() {
-  const { cars } = useCars();
+  const { cars, loading } = useCars();
   const { user } = useAuth();
   const { showToast } = useToast();
 
@@ -166,17 +166,37 @@ export default function Cars() {
         </button>
       </div>
       
-      <div className="cars-grid">
-        {filteredCars.length > 0 ? (
-          filteredCars.map(car => (
+      {loading ? (
+        <div className="cars-grid">
+          {[1, 2, 3, 4, 5, 6].map(n => (
+            <CarCardSkeleton key={n} />
+          ))}
+        </div>
+      ) : filteredCars.length > 0 ? (
+        <div className="cars-grid">
+          {filteredCars.map(car => (
             <CarCard key={car.id} {...car} />
-          ))
-        ) : (
-          <div className="cars-empty">
-            <p>Không tìm thấy mẫu xe nào phù hợp với bộ lọc tìm kiếm của bạn.</p>
-          </div>
-        )}
-      </div>
+          ))}
+        </div>
+      ) : (
+        <div className="cars-empty glass-card" style={{ textAlign: 'center', padding: '48px 24px', gridColumn: '1 / -1' }}>
+          <p style={{ color: 'var(--text-secondary)', marginBottom: '16px' }}>Không tìm thấy mẫu xe nào phù hợp với bộ lọc tìm kiếm của bạn.</p>
+          <button 
+            type="button"
+            onClick={() => {
+              setSearchTerm('');
+              setFilterType('All');
+              setFilterBrand('All');
+              setFilterPrice('All');
+              setSortBy('default');
+              setOnlyFavorites(false);
+            }}
+            className="btn btn-outline"
+          >
+            Xóa bộ lọc
+          </button>
+        </div>
+      )}
     </div>
   );
 }

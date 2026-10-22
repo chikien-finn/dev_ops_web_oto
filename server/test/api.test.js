@@ -134,7 +134,7 @@ describe('AutoPremium API Test Suite', () => {
     assert.equal(body.data.status, 'pending');
   });
 
-  test('GET /api/users should return registered users list', async (t) => {
+  test('GET /api/users should return registered users list without passwords', async (t) => {
     if (!isDbConnected) {
       t.skip('MongoDB không kết nối được trong môi trường CI');
       return;
@@ -144,5 +144,81 @@ describe('AutoPremium API Test Suite', () => {
     const body = await res.json();
     assert.equal(body.success, true);
     assert.ok(body.data.some(u => u.username === 'admin'));
+    for (const u of body.data) {
+      assert.equal(u.password, undefined);
+    }
+  });
+
+  test('POST /api/auth/register should hash password and allow login', async (t) => {
+    if (!isDbConnected) {
+      t.skip('MongoDB không kết nối được trong môi trường CI');
+      return;
+    }
+    const uniqueSuffix = Date.now();
+    const testUsername = `bcrypt_test_${uniqueSuffix}`;
+    const testEmail = `bcrypt_${uniqueSuffix}@example.com`;
+    const testPassword = 'Password123!';
+
+    // 1. Register
+    const regRes = await fetch(`${baseUrl}/api/auth/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        username: testUsername,
+        password: testPassword,
+        fullname: 'Bcrypt Test User',
+        email: testEmail
+      })
+    });
+    assert.equal(regRes.status, 201);
+    const regBody = await regRes.json();
+    assert.equal(regBody.success, true);
+    assert.equal(regBody.user.password, undefined);
+
+    // 2. Login with correct password
+    const loginRes = await fetch(`${baseUrl}/api/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: testUsername, password: testPassword })
+    });
+    assert.equal(loginRes.status, 200);
+    const loginBody = await loginRes.json();
+    assert.equal(loginBody.success, true);
+    assert.equal(loginBody.user.password, undefined);
+
+    // 3. Change password with wrong current password should fail
+    const changeFailRes = await fetch(`${baseUrl}/api/auth/change-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        id: regBody.user.id,
+        currentPassword: 'WrongPassword!',
+        newPassword: 'NewPassword456!'
+      })
+    });
+    assert.equal(changeFailRes.status, 400);
+
+    // 4. Change password with correct current password should succeed
+    const changeSuccessRes = await fetch(`${baseUrl}/api/auth/change-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        id: regBody.user.id,
+        currentPassword: testPassword,
+        newPassword: 'NewPassword456!'
+      })
+    });
+    assert.equal(changeSuccessRes.status, 200);
+
+    // 5. Login with new password should succeed
+    const newLoginRes = await fetch(`${baseUrl}/api/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: testUsername, password: 'NewPassword456!' })
+    });
+    assert.equal(newLoginRes.status, 200);
+    const newLoginBody = await newLoginRes.json();
+    assert.equal(newLoginBody.success, true);
+    assert.equal(newLoginBody.user.password, undefined);
   });
 });

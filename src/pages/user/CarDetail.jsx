@@ -3,7 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { 
   Settings, Fuel, Calendar, ArrowLeft, Heart, 
   Gauge, Zap, ShieldCheck, CheckCircle2, 
-  Compass, PhoneCall, Share2, Award, Sparkles, Send
+  Compass, PhoneCall, Share2, Award, Sparkles, Send, Lock, AlertCircle
 } from 'lucide-react';
 import { useCars } from '../../context/CarContext';
 import { useAuth } from '../../context/AuthContext';
@@ -14,111 +14,38 @@ import CarCard from '../../components/user/CarCard';
 import api from '../../services/api';
 import '../../styles/user/CarDetail.css';
 
-const CAR_SPEC_DETAILS = {
-  1: {
-    acceleration: '4.4 giây',
-    topSpeed: '250 km/h',
-    horsepower: '429 HP',
-    transmission: '9G-TRONIC 9 cấp',
-    drivetrain: '4MATIC Toàn thời gian',
-    engine: '3.0L Turbo Hybrid MHEV',
-    features: [
-      { title: 'Hệ thống treo khí nén AIRMATIC', desc: 'Tự động thích ứng giảm xóc theo từng điều kiện mặt đường' },
-      { title: 'Nội thất Da Nappa & Gỗ quý', desc: 'Không gian tĩnh lặng tuyệt đối với kính cách âm nhiều lớp' },
-      { title: 'Âm thanh Burmester® 3D High-End', desc: 'Hệ thống 15 loa vòm công suất 710 Watt sống động' },
-      { title: 'Hỗ trợ lái bán tự động Cấp 3', desc: 'Tự động giữ làn, chuyển làn và bám đuôi an toàn' }
-    ]
-  },
-  2: {
-    acceleration: '2.7 giây',
-    topSpeed: '330 km/h',
-    horsepower: '650 HP',
-    transmission: '8 cấp PDK ly hợp kép',
-    drivetrain: 'AWD 4 bánh chủ động',
-    engine: '3.8L Boxer Twin-Turbo',
-    features: [
-      { title: 'Phanh Gốm Carbon Porsche (PCCB)', desc: 'Hiệu suất phanh đỉnh cao với kẹp phanh 10 piston phía trước' },
-      { title: 'Kiểm soát khung gầm PDCC', desc: 'Hạn chế tối đa độ nghiêng thân xe khi vào cua tốc độ cao' },
-      { title: 'Ghế thể thao Adaptive 18 hướng', desc: 'Bọc da cao cấp với đường chỉ may thủ công thể thao độc quyền' },
-      { title: 'Hệ thống treo chủ động PASM', desc: 'Hạ thấp trọng tâm 10mm mang lại trải nghiệm xe đua thuần túy' }
-    ]
-  },
-  3: {
-    acceleration: '3.1 giây',
-    topSpeed: '250 km/h',
-    horsepower: '637 HP',
-    transmission: '2 cấp thể thao điện tử',
-    drivetrain: 'quattro điện tử siêu nhạy',
-    engine: 'Dual Electric Motors (800V)',
-    features: [
-      { title: 'Công nghệ sạc siêu nhanh 800V', desc: 'Sạc từ 5% lên 80% chỉ trong 22.5 phút với trạm sạc DC 270kW' },
-      { title: 'Đèn pha Matrix LED & Laser Audi', desc: 'Tầm chiếu sáng vượt trội gấp đôi so với đèn thông thường' },
-      { title: 'Hệ thống đánh lái 4 bánh', desc: 'Bán kính quay vòng linh hoạt và ổn định tuyệt đối ở tốc độ cao' },
-      { title: 'Nội thất thuần chay sinh thái', desc: 'Chất liệu tái chế siêu cao cấp Dinamica & sợi Kaskade hiện đại' }
-    ]
-  },
-  4: {
-    acceleration: '3.0 giây',
-    topSpeed: '305 km/h',
-    horsepower: '617 HP',
-    transmission: '8 cấp M Steptronic',
-    drivetrain: 'M xDrive thể thao 3 chế độ',
-    engine: '4.4L V8 M TwinPower Turbo',
-    features: [
-      { title: 'M xDrive với chế độ 2WD', desc: 'Tự do chuyển đổi giữa dẫn động 4 bánh và dẫn động cầu sau drift' },
-      { title: 'Mui xe sợi Carbon gia cường (CFRP)', desc: 'Cắt giảm trọng lượng và tối ưu hóa trọng tâm xe thể thao' },
-      { title: 'Hệ thống xả thể thao M Sport', desc: 'Âm thanh gầm rú uy lực với van bướm điều khiển điện tử' },
-      { title: 'Bảng đồng hồ Live Cockpit Pro', desc: 'Màn hình 12.3 inch đồ họa thể thao chuyên biệt trường đua' }
-    ]
-  },
-  5: {
-    acceleration: '4.6 giây',
-    topSpeed: '261 km/h',
-    horsepower: '523 HP',
-    transmission: '8 cấp ZF tự động',
-    drivetrain: 'AWD Địa hình All-Terrain',
-    engine: '4.4L Twin-Turbo V8 Hybrid',
-    features: [
-      { title: 'Hệ thống Terrain Response 2', desc: 'Tự động nhận diện và thích ứng mọi địa hình tuyết, bùn, đá, cát' },
-      { title: 'Ghế thương gia Hạng Nhất SV', desc: 'Massage đá nóng, chỉnh điện 24 hướng và đệm đỡ bắp chân thư giãn' },
-      { title: 'Khử tiếng ồn chủ động thế hệ 3', desc: 'Loa gắn tại tựa đầu tạo vùng tĩnh lặng riêng tư tối đa' },
-      { title: 'Cửa mở tự động điều khiển điện', desc: 'Tích hợp cảm biến chống kẹt và tự hít cửa êm ái sang trọng' }
-    ]
-  },
-  6: {
-    acceleration: '3.5 giây',
-    topSpeed: '325 km/h',
-    horsepower: '671 HP',
-    transmission: '8 cấp tự động thể thao',
-    drivetrain: 'Cầu sau RWD vi sai điện tử E-Diff',
-    engine: '4.0L Twin-Turbo V8',
-    features: [
-      { title: 'Siêu xe Super Tourer đầu tiên thế giới', desc: 'Sự kết hợp hoàn mỹ giữa sức mạnh mãnh thú và sự êm ái xa xỉ' },
-      { title: 'Nội thất da Bridge of Weir thủ công', desc: 'Chế tác thủ công tại Vương Quốc Anh chuẩn hoàng gia' },
-      { title: 'Hệ thống vi sai điện tử thông minh', desc: 'Phân bổ lực kéo theo mili-giây giúp ôm cua chuẩn xác tuyệt đối' },
-      { title: 'Hệ thống giải trí thế hệ mới', desc: 'Màn hình cảm ứng điện dung sắc nét, Apple CarPlay không dây' }
-    ]
-  }
-};
-
 export default function CarDetail() {
   const { id } = useParams();
-  const { cars } = useCars();
+  const { cars, loading } = useCars();
   const { user, toggleFavorite } = useAuth();
   const { showToast } = useToast();
   
   const [bookingSent, setBookingSent] = useState(false);
+  const [bookingError, setBookingError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [bookingForm, setBookingForm] = useState({
-    name: user?.name || '',
+    name: user?.name || user?.username || '',
     phone: user?.phone || '',
     date: '',
     location: 'showroom',
     note: ''
   });
 
+  const today = new Date().toISOString().split('T')[0];
+
   const car = cars.find(c => c.id === parseInt(id));
 
   if (!car) {
+    if (loading) {
+      return (
+        <div className="container" style={{ padding: '140px 20px', textAlign: 'center', minHeight: '60vh' }}>
+          <div className="glass-card" style={{ maxWidth: '480px', margin: '0 auto', padding: '40px' }}>
+            <h3 style={{ color: 'var(--accent-hover)', marginBottom: '12px' }}>Đang Tải Dữ Liệu Xe...</h3>
+            <p style={{ color: 'var(--text-secondary)' }}>Vui lòng đợi giây lát trong khi hệ thống nạp dữ liệu từ máy chủ.</p>
+          </div>
+        </div>
+      );
+    }
     return (
       <div className="container" style={{ padding: '120px 20px', textAlign: 'center', minHeight: '60vh' }}>
         <h2>Không tìm thấy mẫu xe</h2>
@@ -131,20 +58,16 @@ export default function CarDetail() {
   }
 
   const isFavorite = user?.favorites?.includes(car.id);
-  const carSpecs = CAR_SPEC_DETAILS[car.id] || {
-    acceleration: '3.8 giây',
-    topSpeed: '280 km/h',
-    horsepower: '500 HP',
-    transmission: 'Tự động thể thao',
-    drivetrain: 'AWD Toàn thời gian',
-    engine: `${car.fuel} High Performance`,
-    features: [
-      { title: 'Thiết kế ngoại thất khí động học', desc: 'Đường nét sang trọng, hệ số cản gió tối ưu vượt trội' },
-      { title: 'Nội thất da cao cấp thượng hạng', desc: 'Ghế chỉnh điện đa hướng nhớ vị trí và sưởi/làm mát' },
-      { title: 'Hệ thống an toàn chủ động 360°', desc: 'Cảnh báo điểm mù, phanh khẩn cấp tự động và camera toàn cảnh' },
-      { title: 'Màn hình thông tin giải trí đa phương tiện', desc: 'Hỗ trợ kết nối thông minh không dây và định vị vệ tinh' }
-    ]
-  };
+
+  // Read specs directly from car.specs, fallback to 'Đang cập nhật' if missing
+  const specs = car.specs || {};
+  const acceleration = specs.acceleration || 'Đang cập nhật';
+  const topSpeed = specs.topSpeed || 'Đang cập nhật';
+  const horsepower = specs.horsepower || 'Đang cập nhật';
+  const transmission = specs.transmission || 'Đang cập nhật';
+  const drivetrain = specs.drivetrain || 'Đang cập nhật';
+  const engine = specs.engine || 'Đang cập nhật';
+  const features = Array.isArray(specs.features) && specs.features.length > 0 ? specs.features : [];
 
   const relatedCars = cars.filter(c => c.id !== car.id).slice(0, 3);
 
@@ -167,19 +90,54 @@ export default function CarDetail() {
 
   const handleBookingSubmit = async (e) => {
     e.preventDefault();
+    setBookingError('');
+
+    if (!user) {
+      showToast('error', 'Quý khách vui lòng đăng nhập để đặt lịch lái thử!');
+      return;
+    }
+
+    if (!bookingForm.name.trim() || bookingForm.name.trim().length < 2) {
+      setBookingError('Vui lòng nhập họ và tên của quý khách (tối thiểu 2 ký tự).');
+      return;
+    }
+
+    const phoneClean = bookingForm.phone.trim().replace(/\s/g, '');
+    const phoneRegex = /^(0|\+84)[3|5|7|8|9][0-9]{8}$/;
+    if (!phoneRegex.test(phoneClean)) {
+      setBookingError('Số điện thoại không hợp lệ. Vui lòng nhập số di động 10 số (Ví dụ: 0912345678).');
+      return;
+    }
+
+    if (!bookingForm.date) {
+      setBookingError('Vui lòng chọn ngày dự kiến lái thử.');
+      return;
+    }
+    if (bookingForm.date < today) {
+      setBookingError('Ngày hẹn lái thử không được là ngày trong quá khứ.');
+      return;
+    }
+
+    setIsSubmitting(true);
     try {
       await api.createBooking({
         carId: car.id,
         carName: car.name,
-        userId: user?.id || null,
-        ...bookingForm
+        userId: user.id,
+        name: bookingForm.name.trim(),
+        phone: phoneClean,
+        date: bookingForm.date,
+        location: bookingForm.location,
+        note: bookingForm.note.trim()
       });
       showToast('success', 'Đã gửi yêu cầu đặt lịch hẹn lái thử thành công! 🚗');
+      setBookingSent(true);
     } catch (err) {
       console.warn('Lỗi khi gửi yêu cầu lái thử lên server:', err);
-      showToast('error', 'Có lỗi khi gửi yêu cầu, vui lòng thử lại sau.');
+      setBookingError('Có lỗi khi gửi yêu cầu lên máy chủ, vui lòng thử lại sau.');
+    } finally {
+      setIsSubmitting(false);
     }
-    setBookingSent(true);
   };
 
   return (
@@ -208,6 +166,7 @@ export default function CarDetail() {
                 src={car.image || FALLBACK_CAR_IMAGE} 
                 alt={car.name} 
                 className="showcase-main-img"
+                loading="lazy"
                 onError={(e) => {
                   e.currentTarget.onerror = null;
                   e.currentTarget.src = FALLBACK_CAR_IMAGE;
@@ -229,7 +188,7 @@ export default function CarDetail() {
                   <Zap size={18} className="stat-icon" />
                   <div>
                     <div className="stat-title">0 - 100 km/h</div>
-                    <div className="stat-val">{carSpecs.acceleration}</div>
+                    <div className="stat-val">{acceleration}</div>
                   </div>
                 </div>
                 <div className="floating-stat-divider"></div>
@@ -237,7 +196,7 @@ export default function CarDetail() {
                   <Gauge size={18} className="stat-icon" />
                   <div>
                     <div className="stat-title">Công Suất</div>
-                    <div className="stat-val">{carSpecs.horsepower}</div>
+                    <div className="stat-val">{horsepower}</div>
                   </div>
                 </div>
                 <div className="floating-stat-divider"></div>
@@ -245,7 +204,7 @@ export default function CarDetail() {
                   <Compass size={18} className="stat-icon" />
                   <div>
                     <div className="stat-title">Tốc Độ Tối Đa</div>
-                    <div className="stat-val">{carSpecs.topSpeed}</div>
+                    <div className="stat-val">{topSpeed}</div>
                   </div>
                 </div>
               </div>
@@ -329,7 +288,7 @@ export default function CarDetail() {
                     <Zap size={20} className="spec-icon-accent" />
                     <span>Tăng Tốc 0-100</span>
                   </div>
-                  <div className="spec-card-value">{carSpecs.acceleration}</div>
+                  <div className="spec-card-value">{acceleration}</div>
                   <div className="spec-card-sub">Thời gian đạt vận tốc cực đại</div>
                 </div>
 
@@ -338,7 +297,7 @@ export default function CarDetail() {
                     <Gauge size={20} className="spec-icon-accent" />
                     <span>Mã Lực Cực Đại</span>
                   </div>
-                  <div className="spec-card-value">{carSpecs.horsepower}</div>
+                  <div className="spec-card-value">{horsepower}</div>
                   <div className="spec-card-sub">Công suất máy đo tại bánh</div>
                 </div>
 
@@ -348,7 +307,7 @@ export default function CarDetail() {
                     <span>Nhiên Liệu</span>
                   </div>
                   <div className="spec-card-value">{car.fuel}</div>
-                  <div className="spec-card-sub">{carSpecs.engine}</div>
+                  <div className="spec-card-sub">{engine}</div>
                 </div>
 
                 <div className="tech-spec-card glass-card">
@@ -356,7 +315,7 @@ export default function CarDetail() {
                     <Settings size={20} className="spec-icon-accent" />
                     <span>Hộp Số</span>
                   </div>
-                  <div className="spec-card-value">{carSpecs.transmission}</div>
+                  <div className="spec-card-value">{transmission}</div>
                   <div className="spec-card-sub">Chuyển số siêu tốc mượt mà</div>
                 </div>
 
@@ -365,7 +324,7 @@ export default function CarDetail() {
                     <Compass size={20} className="spec-icon-accent" />
                     <span>Dẫn Động</span>
                   </div>
-                  <div className="spec-card-value">{carSpecs.drivetrain}</div>
+                  <div className="spec-card-value">{drivetrain}</div>
                   <div className="spec-card-sub">Bám đường & phản xạ tức thì</div>
                 </div>
 
@@ -387,17 +346,27 @@ export default function CarDetail() {
                 <span className="section-pill">Đặc Điểm Nổi Bật</span>
               </div>
               <div className="features-cards-grid">
-                {carSpecs.features.map((feat, idx) => (
-                  <div key={idx} className="feature-item-card glass-card">
-                    <div className="feature-check-icon">
-                      <CheckCircle2 size={24} />
-                    </div>
-                    <div className="feature-item-text">
-                      <h4>{feat.title}</h4>
-                      <p>{feat.desc}</p>
-                    </div>
+                {features.length > 0 ? (
+                  features.map((feat, idx) => {
+                    const title = typeof feat === 'string' ? feat : (feat.title || 'Đang cập nhật');
+                    const desc = typeof feat === 'string' ? '' : (feat.desc || '');
+                    return (
+                      <div key={idx} className="feature-item-card glass-card">
+                        <div className="feature-check-icon">
+                          <CheckCircle2 size={24} />
+                        </div>
+                        <div className="feature-item-text">
+                          <h4>{title}</h4>
+                          {desc && <p>{desc}</p>}
+                        </div>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <div className="feature-item-card glass-card" style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '24px' }}>
+                    <p style={{ color: 'var(--text-secondary)' }}>Thông tin trang bị và tiện nghi đang được cập nhật.</p>
                   </div>
-                ))}
+                )}
               </div>
             </div>
           </div>
@@ -411,7 +380,42 @@ export default function CarDetail() {
                 <p>Nhận xe tại Showroom hoặc phục vụ tận nhà hoàn toàn miễn phí cùng chuyên gia AutoPremium.</p>
               </div>
 
-              {bookingSent ? (
+              {!user ? (
+                <div className="booking-require-login-box" style={{ textAlign: 'center', padding: '32px 14px' }}>
+                  <div style={{
+                    width: '64px',
+                    height: '64px',
+                    borderRadius: '50%',
+                    background: 'rgba(239, 68, 68, 0.15)',
+                    border: '1px solid rgba(239, 68, 68, 0.35)',
+                    color: '#ef4444',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    margin: '0 auto 16px'
+                  }}>
+                    <Lock size={30} />
+                  </div>
+                  <h4 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#fff', marginBottom: '8px' }}>Yêu Cầu Đăng Nhập</h4>
+                  <p style={{ color: '#94a3b8', fontSize: '0.92rem', marginBottom: '22px', lineHeight: 1.5 }}>
+                    Quý khách vui lòng đăng nhập tài khoản AutoPremium để đặt lịch hẹn lái thử mẫu xe <strong>{car.name}</strong>.
+                  </p>
+                  <Link 
+                    to="/login" 
+                    state={{ error: 'Vui lòng đăng nhập để đặt lịch lái thử siêu xe.' }} 
+                    className="btn btn-primary btn-full"
+                  >
+                    Đăng Nhập Ngay
+                  </Link>
+                  <Link 
+                    to="/register" 
+                    className="btn btn-outline btn-full" 
+                    style={{ marginTop: '10px' }}
+                  >
+                    Chưa có tài khoản? Đăng Ký
+                  </Link>
+                </div>
+              ) : bookingSent ? (
                 <div className="booking-success-box">
                   <CheckCircle2 size={48} className="success-icon" />
                   <h4>Đã Tiếp Nhận Thành Công!</h4>
@@ -424,6 +428,24 @@ export default function CarDetail() {
                 </div>
               ) : (
                 <form className="booking-form" onSubmit={handleBookingSubmit}>
+                  {bookingError && (
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      padding: '10px 14px',
+                      borderRadius: '8px',
+                      background: 'rgba(239, 68, 68, 0.15)',
+                      border: '1px solid rgba(239, 68, 68, 0.35)',
+                      color: '#fca5a5',
+                      fontSize: '0.88rem',
+                      marginBottom: '16px'
+                    }}>
+                      <AlertCircle size={16} />
+                      <span>{bookingError}</span>
+                    </div>
+                  )}
+
                   <div className="form-group">
                     <label>Họ và Tên Quý Khách *</label>
                     <input 
@@ -437,7 +459,7 @@ export default function CarDetail() {
                   </div>
 
                   <div className="form-group">
-                    <label>Số Điện Thoại Liên Hệ *</label>
+                    <label>Số Điện Thoại Liên Hệ (10 số di động) *</label>
                     <input 
                       type="tel" 
                       className="form-control" 
@@ -449,10 +471,12 @@ export default function CarDetail() {
                   </div>
 
                   <div className="form-group">
-                    <label>Ngày Dự Kiến Lái Thử</label>
+                    <label>Ngày Dự Kiến Lái Thử *</label>
                     <input 
                       type="date" 
                       className="form-control" 
+                      min={today}
+                      required
                       value={bookingForm.date}
                       onChange={(e) => setBookingForm({...bookingForm, date: e.target.value})}
                     />
@@ -481,8 +505,18 @@ export default function CarDetail() {
                     ></textarea>
                   </div>
 
-                  <button type="submit" className="btn btn-primary btn-full btn-submit-booking">
-                    <Send size={18} /> Gửi Yêu Cầu Lái Thử (Miễn Phí)
+                  <button 
+                    type="submit" 
+                    className="btn btn-primary btn-full btn-submit-booking"
+                    disabled={isSubmitting}
+                  >
+                    {isSubmitting ? (
+                      <span>Đang Gửi Yêu Cầu...</span>
+                    ) : (
+                      <>
+                        <Send size={18} /> Gửi Yêu Cầu Lái Thử (Miễn Phí)
+                      </>
+                    )}
                   </button>
 
                   <div className="booking-hotline-footer">

@@ -1,246 +1,454 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
-  ChevronRight, Star, ShieldCheck, Award, Zap, 
-  Car, Sparkles, PhoneCall, ArrowRight, Calendar
+  Search, Filter, Fuel, 
+  CheckCircle2, AlertCircle, X, Lock, Send
 } from 'lucide-react';
-import CarCard from '../../components/user/CarCard';
-import '../../styles/user/Home.css';
 import { useCars } from '../../context/CarContext';
-
-const TESTIMONIALS = [
-  {
-    id: 1,
-    name: 'Nguyễn Tuấn Anh',
-    role: 'Chủ Tịch Tập Đoàn Bất Động Sản',
-    car: 'Porsche 911 Turbo S',
-    content: 'Dịch vụ tại AutoPremium thực sự vượt ngoài mong đợi. Đội ngũ tư vấn giao xe tận biệt thự rất chu đáo, xe kiểm định hoàn hảo đến từng chi tiết.',
-    rating: 5
-  },
-  {
-    id: 2,
-    name: 'Hoàng Minh Đức',
-    role: 'CEO Công Nghệ',
-    car: 'Mercedes-Benz S-Class 2026',
-    content: 'Thủ tục bàn giao xe và hỗ trợ tài chính cực kỳ nhanh gọn. Tôi rất ấn tượng với chính sách bảo hành 3 năm và đội cứu hộ 24/7 chuyên nghiệp.',
-    rating: 5
-  },
-  {
-    id: 3,
-    name: 'Lê Thảo Trang',
-    role: 'Doanh Nhân & Nhà Sáng Lập',
-    car: 'Range Rover SV Autobiography',
-    content: 'Cảm giác lái thử xe trước khi quyết định mua rất thoải mái. AutoPremium là địa chỉ tin cậy số một cho những ai đam mê siêu xe tại Việt Nam.',
-    rating: 5
-  }
-];
+import { useAuth } from '../../context/AuthContext';
+import { useToast } from '../../context/ToastContext';
+import CarCard, { CarCardSkeleton } from '../../components/user/CarCard';
+import api from '../../services/api';
+import '../../styles/user/Home.css';
 
 export default function Home() {
-  const { cars } = useCars();
-  const [selectedCategory, setSelectedCategory] = useState('All');
+  const { cars, loading } = useCars();
+  const { user } = useAuth();
+  const { showToast } = useToast();
+  const navigate = useNavigate();
 
-  const filteredFeaturedCars = selectedCategory === 'All' 
-    ? cars.slice(0, 3) 
-    : cars.filter(c => c.type === selectedCategory).slice(0, 3);
+  // Filters state
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedType, setSelectedType] = useState('All');
+  const [selectedFuel, setSelectedFuel] = useState('All');
+  const [sortBy, setSortBy] = useState('default');
+
+  // Booking Modal State
+  const [bookingCar, setBookingCar] = useState(null);
+  const [requireLoginCar, setRequireLoginCar] = useState(null);
+  const [bookingForm, setBookingForm] = useState({
+    name: '',
+    phone: '',
+    date: '',
+    location: 'showroom',
+    note: ''
+  });
+  const [bookingError, setBookingError] = useState('');
+  const [isSubmittingBooking, setIsSubmittingBooking] = useState(false);
+  const [bookingSuccess, setBookingSuccess] = useState(false);
+
+  // Today for date input min
+  const today = new Date().toISOString().split('T')[0];
+
+  // Available Filter Options
+  const carTypes = useMemo(() => ['All', ...new Set(cars.map(c => c.type))], [cars]);
+  const fuelTypes = useMemo(() => ['All', ...new Set(cars.map(c => c.fuel))], [cars]);
+
+  // Filter & Sort cars
+  const filteredCars = useMemo(() => {
+    return cars
+      .filter(car => {
+        const matchesSearch = car.name.toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesType = selectedType === 'All' || car.type === selectedType;
+        const matchesFuel = selectedFuel === 'All' || car.fuel === selectedFuel;
+        return matchesSearch && matchesType && matchesFuel;
+      })
+      .sort((a, b) => {
+        if (sortBy === 'price-asc') return (Number(a.price) || 0) - (Number(b.price) || 0);
+        if (sortBy === 'price-desc') return (Number(b.price) || 0) - (Number(a.price) || 0);
+        if (sortBy === 'year-desc') return (Number(b.year) || 0) - (Number(a.year) || 0);
+        return 0;
+      });
+  }, [cars, searchTerm, selectedType, selectedFuel, sortBy]);
+
+  // Open Test Drive Flow
+  const handleTestDriveClick = (car) => {
+    if (!user) {
+      // User must be logged in to book test drive
+      setRequireLoginCar(car);
+      return;
+    }
+
+    setBookingCar(car);
+    setBookingError('');
+    setBookingSuccess(false);
+    setBookingForm({
+      name: user.name || user.username || '',
+      phone: user.phone || '',
+      date: '',
+      location: 'showroom',
+      note: ''
+    });
+  };
+
+  // Submit Test Drive Booking with full field validation
+  const handleBookingSubmit = async (e) => {
+    e.preventDefault();
+    setBookingError('');
+
+    // 1. Validate Họ và Tên
+    if (!bookingForm.name.trim() || bookingForm.name.trim().length < 2) {
+      setBookingError('Vui lòng nhập họ và tên của quý khách (tối thiểu 2 ký tự).');
+      return;
+    }
+
+    // 2. Validate Số điện thoại Việt Nam (10 số)
+    const phoneClean = bookingForm.phone.trim().replace(/\s/g, '');
+    const phoneRegex = /^(0|\+84)[3|5|7|8|9][0-9]{8}$/;
+    if (!phoneRegex.test(phoneClean)) {
+      setBookingError('Số điện thoại không hợp lệ. Vui lòng nhập số di động 10 số (Ví dụ: 0912345678).');
+      return;
+    }
+
+    // 3. Validate Ngày hẹn
+    if (!bookingForm.date) {
+      setBookingError('Vui lòng chọn ngày dự kiến lái thử.');
+      return;
+    }
+    if (bookingForm.date < today) {
+      setBookingError('Ngày hẹn lái thử không được là ngày trong quá khứ.');
+      return;
+    }
+
+    setIsSubmittingBooking(true);
+    try {
+      const res = await api.createBooking({
+        carId: bookingCar.id,
+        carName: bookingCar.name,
+        userId: user?.id || null,
+        name: bookingForm.name.trim(),
+        phone: phoneClean,
+        date: bookingForm.date,
+        location: bookingForm.location,
+        note: bookingForm.note.trim()
+      });
+
+      if (res.success || !res.isNetworkError) {
+        setBookingSuccess(true);
+        showToast('success', `Đã đặt lịch hẹn lái thử mẫu xe ${bookingCar.name} thành công! 🚗`);
+      } else {
+        setBookingError(res.message || 'Có lỗi khi gửi yêu cầu. Vui lòng thử lại sau.');
+      }
+    } catch {
+      setBookingError('Không thể kết nối đến máy chủ. Vui lòng thử lại sau.');
+    } finally {
+      setIsSubmittingBooking(false);
+    }
+  };
+
+  const closeBookingModal = () => {
+    setBookingCar(null);
+    setBookingSuccess(false);
+    setBookingError('');
+  };
 
   return (
-    <div className="home-page">
-      {/* 1. Hero Showcase Section */}
-      <section className="hero">
-        <div className="hero-overlay"></div>
-        <div className="container hero-content">
-          <div className="hero-badge">
-            <Sparkles size={16} className="hero-badge-icon" />
-            <span>Showroom Siêu Xe Thượng Hạng AutoPremium</span>
+    <div className="user-home-container">
+      {/* 1. Showroom Top Hero Header */}
+      <section className="showroom-hero-bar">
+        <div className="container">
+          <div className="showroom-hero-text">
+            <span className="showroom-pill">AutoPremium Showroom • 2026 Fleet</span>
+            <h1 className="showroom-main-title">Kho Siêu Xe Thượng Hạng</h1>
+            <p className="showroom-main-desc">
+              Trải nghiệm bộ sưu tập siêu xe thể thao, sedan hạng sang và SUV địa hình đỉnh cao. Đăng ký lái thử trực tiếp hoặc giao xe tận nhà.
+            </p>
           </div>
 
-          <h1 className="hero-title">
-            Khởi Nguồn Đam Mê<br />
-            <span className="hero-title-highlight">Tốc Độ & Đẳng Cấp</span>
-          </h1>
+          {/* Quick Search & Filters Tool */}
+          <div className="showroom-filter-card glass-card">
+            <div className="showroom-search-row">
+              <div className="showroom-search-input-wrap">
+                <Search size={18} className="search-icon" />
+                <input 
+                  type="text" 
+                  placeholder="Tìm kiếm siêu xe theo tên (Ferrari, Porsche, Rolls-Royce, Audi...)" 
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="showroom-search-field"
+                />
+                {searchTerm && (
+                  <button onClick={() => setSearchTerm('')} className="search-clear-btn" title="Xóa tìm kiếm">
+                    <X size={16} />
+                  </button>
+                )}
+              </div>
 
-          <p className="hero-subtitle">
-            Khám phá bộ sưu tập những mẫu siêu xe sang trọng và mạnh mẽ nhất hành tinh. Trải nghiệm cảm giác lái thuần khiết cùng chuẩn mực phục vụ chuẩn Hoàng gia.
-          </p>
+              <div className="showroom-sort-wrap">
+                <select 
+                  value={sortBy} 
+                  onChange={(e) => setSortBy(e.target.value)}
+                  className="showroom-select"
+                >
+                  <option value="default">Sắp xếp: Mặc định</option>
+                  <option value="price-asc">Giá: Thấp đến Cao</option>
+                  <option value="price-desc">Giá: Cao đến Thấp</option>
+                  <option value="year-desc">Đời xe: Mới nhất</option>
+                </select>
+              </div>
+            </div>
 
-          <div className="hero-actions">
-            <Link to="/cars" className="btn btn-primary btn-hero">
-              <span>Khám Phá Kho Xe</span>
-              <ChevronRight size={20} />
-            </Link>
-            <Link to="/favorites" className="btn btn-outline btn-hero">
-              <span>Mục Yêu Thích</span>
-            </Link>
-          </div>
+            {/* Category and Fuel Filter Pills */}
+            <div className="showroom-filter-pills-row">
+              <div className="filter-group-wrap">
+                <span className="filter-group-title"><Filter size={14} /> Kiểu dáng:</span>
+                <div className="pills-list">
+                  {carTypes.map(type => (
+                    <button
+                      key={type}
+                      onClick={() => setSelectedType(type)}
+                      className={`pill-btn ${selectedType === type ? 'active' : ''}`}
+                    >
+                      {type === 'All' ? 'Tất Cả' : type}
+                    </button>
+                  ))}
+                </div>
+              </div>
 
-          {/* Floating Key Metrics */}
-          <div className="hero-metrics-bar">
-            <div className="metric-item">
-              <span className="metric-number">500+</span>
-              <span className="metric-label">Siêu Xe Đã Giao</span>
-            </div>
-            <div className="metric-divider"></div>
-            <div className="metric-item">
-              <span className="metric-number">100%</span>
-              <span className="metric-label">Chính Hãng Nhập Khẩu</span>
-            </div>
-            <div className="metric-divider"></div>
-            <div className="metric-item">
-              <span className="metric-number">200+</span>
-              <span className="metric-label">Điểm Kiểm Định Kỹ Thuật</span>
-            </div>
-            <div className="metric-divider"></div>
-            <div className="metric-item">
-              <span className="metric-number">24/7</span>
-              <span className="metric-label">Hỗ Trợ VIP Tận Nơi</span>
+              <div className="filter-group-wrap">
+                <span className="filter-group-title"><Fuel size={14} /> Nhiên liệu:</span>
+                <div className="pills-list">
+                  {fuelTypes.map(fuel => (
+                    <button
+                      key={fuel}
+                      onClick={() => setSelectedFuel(fuel)}
+                      className={`pill-btn ${selectedFuel === fuel ? 'active' : ''}`}
+                    >
+                      {fuel === 'All' ? 'Tất Cả' : fuel}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* 2. Featured Cars Section with Filter Tabs */}
-      <section className="featured-section container">
-        <div className="section-header-modern">
-          <div className="section-title-wrap">
-            <span className="section-sub-pill">Tuyển Chọn Đỉnh Cao</span>
-            <h2 className="section-title-modern">Bộ Sưu Tập Nổi Bật</h2>
-            <p className="section-desc-modern">Những kiệt tác thiết kế và kỹ thuật khí động học được săn đón nhiều nhất.</p>
+      {/* 2. Cars Grid Section */}
+      <section className="showroom-cars-section container">
+        <div className="showroom-results-header">
+          <div className="results-count">
+            Đang hiển thị <strong>{filteredCars.length}</strong> mẫu siêu xe
+            {selectedType !== 'All' && ` • Phân khúc: ${selectedType}`}
+            {selectedFuel !== 'All' && ` • Nhiên liệu: ${selectedFuel}`}
           </div>
+          {(searchTerm || selectedType !== 'All' || selectedFuel !== 'All') && (
+            <button 
+              onClick={() => { setSearchTerm(''); setSelectedType('All'); setSelectedFuel('All'); setSortBy('default'); }}
+              className="reset-filters-btn"
+            >
+              Đặt lại bộ lọc
+            </button>
+          )}
+        </div>
 
-          {/* Category Tabs */}
-          <div className="home-category-tabs">
-            {['All', 'Coupe', 'Sedan', 'SUV'].map(cat => (
-              <button
-                key={cat}
-                onClick={() => setSelectedCategory(cat)}
-                className={`category-tab-btn ${selectedCategory === cat ? 'active' : ''}`}
-              >
-                {cat === 'All' ? 'Tất Cả Mẫu' : cat}
-              </button>
+        {loading ? (
+          <div className="showroom-cars-grid">
+            {[1, 2, 3, 4, 5, 6].map(n => (
+              <CarCardSkeleton key={n} />
             ))}
           </div>
-        </div>
-        
-        <div className="cars-grid">
-          {filteredFeaturedCars.map(car => (
-            <CarCard key={car.id} {...car} />
-          ))}
-        </div>
-
-        <div className="view-all-bottom">
-          <Link to="/cars" className="btn btn-outline btn-view-all">
-            Xem Toàn Bộ {cars.length} Mẫu Xe <ArrowRight size={18} />
-          </Link>
-        </div>
+        ) : filteredCars.length === 0 ? (
+          <div className="glass-card showroom-empty-box">
+            <AlertCircle size={44} className="empty-icon" />
+            <h3>Không tìm thấy mẫu xe nào</h3>
+            <p>Vui lòng thử tìm kiếm với từ khóa khác hoặc điều chỉnh lại bộ lọc phân khúc.</p>
+            <button 
+              onClick={() => { setSearchTerm(''); setSelectedType('All'); setSelectedFuel('All'); setSortBy('default'); }}
+              className="btn btn-outline"
+            >
+              Xóa bộ lọc
+            </button>
+          </div>
+        ) : (
+          <div className="showroom-cars-grid">
+            {filteredCars.map(car => (
+              <CarCard
+                key={car.id}
+                {...car}
+                car={car}
+                onTestDrive={handleTestDriveClick}
+              />
+            ))}
+          </div>
+        )}
       </section>
 
-      {/* 3. Why Choose Us Section */}
-      <section className="why-us-section">
-        <div className="container">
-          <div className="section-center-header">
-            <span className="section-sub-pill">Giá Trị Cốt Lõi</span>
-            <h2 className="section-title-modern">Đặc Quyền Khách Hàng AutoPremium</h2>
-            <p className="section-desc-modern" style={{ maxWidth: '640px', margin: '0 auto' }}>
-              Chúng tôi không chỉ trao chìa khóa một chiếc xe, mà còn mở ra phong cách sống thượng lưu với những dịch vụ chu toàn nhất.
+      {/* =========================================================
+          3. LOGIN REQUIRED MODAL (WHEN GUEST CLICKS TEST DRIVE)
+          ========================================================= */}
+      {requireLoginCar && (
+        <div className="modal-backdrop" onClick={() => setRequireLoginCar(null)}>
+          <div className="modal-dialog glass-card require-login-dialog" onClick={(e) => e.stopPropagation()}>
+            <button className="modal-close-btn" onClick={() => setRequireLoginCar(null)}>
+              <X size={20} />
+            </button>
+            <div className="require-login-icon">
+              <Lock size={40} />
+            </div>
+            <h3 className="require-login-title">Yêu Cầu Đăng Nhập</h3>
+            <p className="require-login-desc">
+              Để đảm bảo bảo mật và sắp xếp xe lái thử chu đáo nhất cho mẫu xe <strong>{requireLoginCar.name}</strong>, quý khách vui lòng đăng nhập tài khoản trước khi đăng ký.
             </p>
-          </div>
-
-          <div className="why-us-grid">
-            <div className="why-us-card glass-card">
-              <div className="why-card-number">01</div>
-              <div className="why-icon-box">
-                <ShieldCheck size={28} />
-              </div>
-              <h3>Kiểm Định 200 Điểm Khắt Khe</h3>
-              <p>Mỗi chiếc xe đều vượt qua quy trình kiểm tra nghiêm ngặt từ động cơ, hệ thống khung gầm đến từng chi tiết nội thất thủ công.</p>
-            </div>
-
-            <div className="why-us-card glass-card">
-              <div className="why-card-number">02</div>
-              <div className="why-icon-box">
-                <Car size={28} />
-              </div>
-              <h3>Lái Thử Tận Nhà Miễn Phí</h3>
-              <p>Trải nghiệm cảm giác lái phấn khích ngay tại cung đường yêu thích của quý khách cùng chuyên viên hướng dẫn chuyên nghiệp.</p>
-            </div>
-
-            <div className="why-us-card glass-card">
-              <div className="why-card-number">03</div>
-              <div className="why-icon-box">
-                <Award size={28} />
-              </div>
-              <h3>Bảo Hành 3 Năm Quốc Tế</h3>
-              <p>Chính sách bảo dưỡng toàn diện, cung cấp phụ tùng chính hãng nhập khẩu trực tiếp từ các xưởng chế tác châu Âu.</p>
-            </div>
-
-            <div className="why-us-card glass-card">
-              <div className="why-card-number">04</div>
-              <div className="why-icon-box">
-                <Zap size={28} />
-              </div>
-              <h3>Hỗ Trợ Tài Chính Linh Hoạt</h3>
-              <p>Hợp tác cùng các ngân hàng quốc tế hàng đầu, cung cấp gói hỗ trợ trả góp lên đến 80% giá trị xe với lãi suất ưu đãi độc quyền.</p>
+            <div className="require-login-actions">
+              <button 
+                onClick={() => {
+                  setRequireLoginCar(null);
+                  navigate('/login', { state: { error: 'Vui lòng đăng nhập để tiếp tục đăng ký lái thử xe.' } });
+                }} 
+                className="btn btn-primary btn-full"
+              >
+                Đăng Nhập Ngay
+              </button>
+              <button 
+                onClick={() => {
+                  setRequireLoginCar(null);
+                  navigate('/register');
+                }} 
+                className="btn btn-outline btn-full"
+              >
+                Chưa có tài khoản? Đăng Ký
+              </button>
             </div>
           </div>
         </div>
-      </section>
+      )}
 
-      {/* 4. VIP Call To Action Banner */}
-      <section className="container vip-cta-section">
-        <div className="vip-cta-card glass-card">
-          <div className="vip-cta-content">
-            <span className="vip-cta-pill">
-              <Sparkles size={14} /> Trải Nghiệm Thực Tế
-            </span>
-            <h2>Sẵn Sàng Trải Nghiệm Tiếng Gầm Của Những Siêu Phẩm?</h2>
-            <p>
-              Đặt lịch hẹn ngay hôm nay để trở thành một trong những người đầu tiên cầm lái những mẫu xe danh giá nhất tại showroom của chúng tôi.
-            </p>
-            <div className="vip-cta-actions">
-              <Link to="/cars" className="btn btn-primary btn-cta-lg">
-                <Calendar size={18} /> Đặt Lịch Lái Thử VIP
-              </Link>
-              <a href="tel:19001234" className="btn btn-outline btn-cta-lg">
-                <PhoneCall size={18} /> Hotline: 1900 1234
-              </a>
-            </div>
-          </div>
-        </div>
-      </section>
+      {/* =========================================================
+          4. TEST DRIVE BOOKING MODAL (FOR LOGGED-IN USERS)
+          ========================================================= */}
+      {bookingCar && (
+        <div className="modal-backdrop" onClick={closeBookingModal}>
+          <div className="modal-dialog glass-card test-drive-dialog" onClick={(e) => e.stopPropagation()}>
+            <button className="modal-close-btn" onClick={closeBookingModal}>
+              <X size={20} />
+            </button>
 
-      {/* 5. Customer Testimonials */}
-      <section className="container testimonials-section">
-        <div className="section-center-header">
-          <span className="section-sub-pill">Khách Hàng Nói Gì Về Chúng Tôi</span>
-          <h2 className="section-title-modern">Trải Nghiệm Từ Những Chủ Nhân</h2>
-          <p className="section-desc-modern" style={{ maxWidth: '600px', margin: '0 auto' }}>
-            Sự hài lòng và niềm kiêu hãnh của quý khách hàng chính là bảo chứng giá trị nhất cho thương hiệu AutoPremium.
-          </p>
-        </div>
-
-        <div className="testimonials-grid">
-          {TESTIMONIALS.map(item => (
-            <div key={item.id} className="testimonial-card glass-card">
-              <div className="testimonial-stars">
-                {[...Array(item.rating)].map((_, i) => (
-                  <Star key={i} size={16} fill="#eab308" color="#eab308" />
-                ))}
-              </div>
-              <p className="testimonial-quote">"{item.content}"</p>
-              <div className="testimonial-author">
-                <div className="author-avatar">
-                  {item.name.charAt(0)}
+            {bookingSuccess ? (
+              <div className="booking-modal-success">
+                <CheckCircle2 size={56} className="success-icon" />
+                <h3>Đã Đặt Lịch Lái Thử Thành Công!</h3>
+                <p>
+                  Cảm ơn quý khách <strong>{bookingForm.name}</strong>. AutoPremium đã tiếp nhận yêu cầu lái thử mẫu xe <strong>{bookingCar.name}</strong>.
+                </p>
+                <div className="success-details-box">
+                  <div><strong>Ngày lái thử:</strong> {bookingForm.date}</div>
+                  <div><strong>Địa điểm:</strong> {bookingForm.location === 'showroom' ? 'Tại Showroom AutoPremium' : 'Giao xe lái thử tận nhà'}</div>
+                  <div><strong>Điện thoại:</strong> {bookingForm.phone}</div>
                 </div>
-                <div className="author-info">
-                  <h4>{item.name}</h4>
-                  <span className="author-role">{item.role}</span>
-                  <span className="author-car">• Sở hữu: {item.car}</span>
-                </div>
+                <p className="success-note">
+                  Chuyên viên tư vấn sẽ liên hệ với quý khách trong vòng 15 phút để xác nhận thủ tục.
+                </p>
+                <button onClick={closeBookingModal} className="btn btn-primary btn-full">
+                  Hoàn Tất
+                </button>
               </div>
-            </div>
-          ))}
+            ) : (
+              <>
+                <div className="modal-header-booking">
+                  <span className="modal-badge-car">VIP Test Drive</span>
+                  <h3 className="modal-booking-title">Đăng Ký Lái Thử Siêu Xe</h3>
+                  <div className="modal-selected-car">
+                    <img 
+                      src={bookingCar.image || FALLBACK_CAR_IMAGE} 
+                      alt={bookingCar.name} 
+                      className="modal-car-thumb"
+                    />
+                    <div>
+                      <div className="modal-car-name">{bookingCar.name}</div>
+                      <div className="modal-car-price">${Number(bookingCar.price).toLocaleString()} • {bookingCar.type}</div>
+                    </div>
+                  </div>
+                </div>
+
+                {bookingError && (
+                  <div className="modal-alert-error">
+                    <AlertCircle size={18} />
+                    <span>{bookingError}</span>
+                  </div>
+                )}
+
+                <form onSubmit={handleBookingSubmit} className="modal-booking-form">
+                  <div className="form-group">
+                    <label>Họ và Tên Quý Khách *</label>
+                    <input 
+                      type="text" 
+                      className="form-control" 
+                      placeholder="Ví dụ: Nguyễn Văn A"
+                      value={bookingForm.name}
+                      onChange={(e) => setBookingForm({ ...bookingForm, name: e.target.value })}
+                      required
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label>Số Điện Thoại Liên Hệ (10 số di động) *</label>
+                    <input 
+                      type="tel" 
+                      className="form-control" 
+                      placeholder="Ví dụ: 0912345678"
+                      value={bookingForm.phone}
+                      onChange={(e) => setBookingForm({ ...bookingForm, phone: e.target.value })}
+                      required
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label>Ngày Dự Kiến Lái Thử *</label>
+                    <input 
+                      type="date" 
+                      className="form-control" 
+                      min={today}
+                      value={bookingForm.date}
+                      onChange={(e) => setBookingForm({ ...bookingForm, date: e.target.value })}
+                      required
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label>Địa Điểm Tiếp Nhận Xe *</label>
+                    <select 
+                      className="form-control"
+                      value={bookingForm.location}
+                      onChange={(e) => setBookingForm({ ...bookingForm, location: e.target.value })}
+                    >
+                      <option value="showroom">Tại Showroom AutoPremium (Quận 1, TP. HCM)</option>
+                      <option value="home">Giao xe tận nhà quý khách để lái thử</option>
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label>Ghi Chú Hoặc Yêu Cầu Riêng</label>
+                    <textarea 
+                      className="form-control" 
+                      rows="2"
+                      placeholder="Khung giờ thuận tiện hoặc yêu cầu thêm..."
+                      value={bookingForm.note}
+                      onChange={(e) => setBookingForm({ ...bookingForm, note: e.target.value })}
+                    ></textarea>
+                  </div>
+
+                  <div className="modal-booking-actions">
+                    <button type="button" onClick={closeBookingModal} className="btn btn-outline" disabled={isSubmittingBooking}>
+                      Hủy Bỏ
+                    </button>
+                    <button type="submit" className="btn btn-primary" disabled={isSubmittingBooking}>
+                      {isSubmittingBooking ? (
+                        <span>Đang Gửi...</span>
+                      ) : (
+                        <>
+                          <Send size={16} />
+                          <span>Gửi Đăng Ký Lái Thử</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </form>
+              </>
+            )}
+          </div>
         </div>
-      </section>
+      )}
     </div>
   );
 }

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { User, Lock, ArrowRight, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { User, Lock, ArrowRight, AlertCircle, CheckCircle2, Shield } from 'lucide-react';
 import '../../styles/user/Login.css';
 import { useAuth } from '../../context/AuthContext';
 
@@ -8,7 +8,7 @@ export default function Login() {
   const location = useLocation();
   const [username, setUsername] = useState(location.state?.registeredUsername || '');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const [error, setError] = useState(location.state?.error || '');
   const [infoMsg, setInfoMsg] = useState(() => 
     location.state?.registeredUsername
       ? `Đăng ký thành công! Vui lòng nhập mật khẩu cho tài khoản "${location.state.registeredUsername}" để tiếp tục.`
@@ -16,6 +16,12 @@ export default function Login() {
   );
   const navigate = useNavigate();
   const { login } = useAuth();
+
+  const handleQuickFill = (u, p) => {
+    setUsername(u);
+    setPassword(p);
+    setError('');
+  };
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -93,6 +99,28 @@ export default function Login() {
           <button type="submit" className="btn btn-primary btn-full">
             Đăng Nhập <ArrowRight size={18} />
           </button>
+
+          <div className="login-quick-section">
+            <span className="login-quick-hint">Điền nhanh tài khoản thử nghiệm:</span>
+            <div className="login-quick-actions">
+              <button 
+                type="button" 
+                className="btn-quick-tag admin" 
+                onClick={() => handleQuickFill('admin', 'admin123')}
+                title="Đăng nhập tài khoản Quản trị viên"
+              >
+                <Shield size={14} /> <span>Admin (admin / admin123)</span>
+              </button>
+              <button 
+                type="button" 
+                className="btn-quick-tag user" 
+                onClick={() => handleQuickFill('user123', '123456')}
+                title="Đăng nhập tài khoản Người dùng bình thường"
+              >
+                <User size={14} /> <span>User (user123 / 123456)</span>
+              </button>
+            </div>
+          </div>
         </form>
 
         <p className="login-footer-text">

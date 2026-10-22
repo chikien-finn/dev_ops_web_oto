@@ -1,13 +1,15 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Heart, ArrowLeft, Car, LogIn } from 'lucide-react';
+import { Heart, ArrowLeft, Car, LogIn, Search, AlertCircle } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useCars } from '../../context/CarContext';
-import CarCard from '../../components/user/CarCard';
+import CarCard, { CarCardSkeleton } from '../../components/user/CarCard';
 import '../../styles/user/Favorites.css';
 
 export default function Favorites() {
   const { user } = useAuth();
-  const { cars } = useCars();
+  const { cars, loading } = useCars();
+  const [searchTerm, setSearchTerm] = useState('');
 
   if (!user) {
     return (
@@ -34,6 +36,9 @@ export default function Favorites() {
   }
 
   const favoriteCars = user.favorites ? cars.filter(car => user.favorites.includes(car.id)) : [];
+  const filteredFavorites = favoriteCars.filter(car => 
+    car.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   return (
     <div className="container favorites-page">
@@ -50,15 +55,30 @@ export default function Favorites() {
             Bộ sưu tập những mẫu xe bạn đã lưu lại để tham khảo và đặt lịch lái thử.
           </p>
         </div>
+
+        {favoriteCars.length > 0 && (
+          <div style={{ marginTop: '16px', maxWidth: '380px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(0,0,0,0.25)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '8px 14px', gap: '10px' }}>
+              <Search size={18} color="var(--text-secondary)" />
+              <input
+                type="text"
+                placeholder="Tìm trong danh sách yêu thích..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                style={{ background: 'transparent', border: 'none', color: '#fff', outline: 'none', width: '100%', fontSize: '0.9rem' }}
+              />
+            </div>
+          </div>
+        )}
       </div>
 
-      {favoriteCars.length > 0 ? (
+      {loading ? (
         <div className="cars-grid">
-          {favoriteCars.map(car => (
-            <CarCard key={car.id} {...car} />
+          {[1, 2, 3].map(n => (
+            <CarCardSkeleton key={n} />
           ))}
         </div>
-      ) : (
+      ) : favoriteCars.length === 0 ? (
         <div className="glass-card favorites-empty-card">
           <div className="fav-icon-wrapper">
             <Heart size={56} className="fav-icon-empty" />
@@ -67,9 +87,36 @@ export default function Favorites() {
           <p>
             Bạn chưa lưu mẫu xe nào. Hãy bấm vào biểu tượng trái tim trên bất kỳ chiếc xe nào để thêm vào danh sách yêu thích của bạn!
           </p>
-          <Link to="/cars" className="btn btn-primary" style={{ marginTop: '24px' }}>
-            <Car size={18} /> Khám Phá Kho Xe Ngay
-          </Link>
+          <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', marginTop: '24px' }}>
+            <Link to="/cars" className="btn btn-outline">
+              Xóa bộ lọc
+            </Link>
+            <Link to="/cars" className="btn btn-primary">
+              <Car size={18} /> Khám Phá Kho Xe Ngay
+            </Link>
+          </div>
+        </div>
+      ) : filteredFavorites.length === 0 ? (
+        <div className="glass-card favorites-empty-card">
+          <div className="fav-icon-wrapper">
+            <AlertCircle size={48} className="fav-icon-empty" />
+          </div>
+          <h2>Không Tìm Thấy Mẫu Xe</h2>
+          <p>Không có mẫu xe yêu thích nào khớp với từ khóa tìm kiếm "{searchTerm}".</p>
+          <button 
+            type="button" 
+            onClick={() => setSearchTerm('')} 
+            className="btn btn-outline"
+            style={{ marginTop: '24px' }}
+          >
+            Xóa bộ lọc
+          </button>
+        </div>
+      ) : (
+        <div className="cars-grid">
+          {filteredFavorites.map(car => (
+            <CarCard key={car.id} {...car} />
+          ))}
         </div>
       )}
     </div>

@@ -23,9 +23,9 @@ export default function Register() {
     setError('');
     setSuccessMsg('');
 
-    // Kiểm tra tính hợp lệ
-    if (!fullname.trim()) {
-      setError('Vui lòng nhập họ và tên của bạn.');
+    // Kiểm tra tính hợp lệ đầy đủ
+    if (!fullname.trim() || fullname.trim().length < 2) {
+      setError('Họ và tên bắt buộc phải có ít nhất 2 ký tự.');
       return;
     }
 
@@ -41,18 +41,29 @@ export default function Register() {
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email.trim())) {
-      setError('Định dạng email không hợp lệ.');
+    if (!email.trim() || !emailRegex.test(email.trim())) {
+      setError('Định dạng email không hợp lệ (Ví dụ: user@example.com).');
       return;
     }
 
-    if (password.length < 6) {
+    const phoneClean = phone.trim().replace(/\s/g, '');
+    const phoneRegex = /^(0|\+84)[3|5|7|8|9][0-9]{8}$/;
+    if (!phoneClean) {
+      setError('Vui lòng nhập số điện thoại liên hệ.');
+      return;
+    }
+    if (!phoneRegex.test(phoneClean)) {
+      setError('Số điện thoại không hợp lệ. Vui lòng nhập số di động 10 số (Ví dụ: 0912345678).');
+      return;
+    }
+
+    if (!password || password.length < 6) {
       setError('Mật khẩu phải có độ dài ít nhất 6 ký tự.');
       return;
     }
 
     if (password !== confirmPassword) {
-      setError('Mật khẩu xác nhận không khớp.');
+      setError('Mật khẩu xác nhận không khớp với mật khẩu đã nhập.');
       return;
     }
 

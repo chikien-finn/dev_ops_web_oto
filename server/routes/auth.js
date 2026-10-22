@@ -1,4 +1,5 @@
 import express from 'express';
+import bcrypt from 'bcryptjs';
 import { User, Favorite } from '../config/db.js';
 
 const router = express.Router();
@@ -40,11 +41,12 @@ router.post('/register', async (req, res) => {
 
     const newId = `user_${Date.now()}`;
     const userRole = role || (cleanUsername === 'admin' ? 'admin' : 'user');
+    const hashedPassword = await bcrypt.hash(password, 10);
 
     const newUser = await User.create({
       id: newId,
       username: cleanUsername,
-      password,
+      password: hashedPassword,
       name: (fullname || username).trim(),
       email: cleanEmail,
       phone: (phone || '').trim(),
@@ -74,11 +76,15 @@ router.post('/login', async (req, res) => {
     const cleanIdentifier = username.trim().toLowerCase();
 
     const user = await User.findOne({
-      $or: [{ username: cleanIdentifier }, { email: cleanIdentifier }],
-      password
+      $or: [{ username: cleanIdentifier }, { email: cleanIdentifier }]
     });
 
     if (!user) {
+      return res.status(401).json({ success: false, message: 'Tên đăng nhập/email hoặc mật khẩu không chính xác.' });
+    }
+
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
       return res.status(401).json({ success: false, message: 'Tên đăng nhập/email hoặc mật khẩu không chính xác.' });
     }
 
@@ -148,11 +154,12 @@ router.post('/change-password', async (req, res) => {
       return res.status(404).json({ success: false, message: 'Không tìm thấy tài khoản.' });
     }
 
-    if (user.password !== currentPassword) {
+    const isMatch = await bcrypt.compare(currentPassword, user.password);
+    if (!isMatch) {
       return res.status(400).json({ success: false, message: 'Mật khẩu hiện tại không đúng.' });
     }
 
-    user.password = newPassword;
+    user.password = await bcrypt.hash(newPassword, 10);
     await user.save();
 
     return res.json({ success: true, message: 'Đổi mật khẩu thành công!' });
